@@ -19,6 +19,7 @@
 - **Observable results are always stated positively.** `successful` means the good outcome obtained — for a `critical_error` criterion that means the error was *avoided*.
 - **`direct` evidence strength means claim-complete**, not merely "not proxy".
 - Verification commands, run from the repo root: `pnpm lint`, `pnpm check-types`, `pnpm db:reset`, `pnpm --filter @lighthouse/db db:demo`, `pnpm --filter @lighthouse/db test`.
+- **drizzle-kit mis-splits raw SQL containing a literal `;`**, even inside a quoted string, corrupting the emitted migration `.sql` while leaving the snapshot JSON correct. If a `check()` or other raw SQL fragment needs a semicolon, write it as a Postgres hex escape (`E'[\x3B=]'`), never literally. Found the hard way in Task 2.
 - Biome config is 2-space indent, 100-char lines, double quotes. Run `pnpm lint:fix` before committing if `pnpm lint` complains.
 
 ## File Structure
