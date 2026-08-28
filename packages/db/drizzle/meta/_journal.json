@@ -57,6 +57,20 @@
       "when": 1787956231867,
       "tag": "0007_transfer_distance_performance_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787957158014,
+      "tag": "0008_administration_evidence_ceiling",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787957158999,
+      "tag": "0009_administration_ceiling_trigger",
+      "breakpoints": true
     }
   ]
 }

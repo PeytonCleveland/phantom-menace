@@ -43,6 +43,27 @@ export async function recordObservation(
   input: RecordObservationInput,
 ): Promise<string> {
   return db.transaction(async (tx) => {
+    // The administration's effective ceiling binds the claim, and it is
+    // enforced here rather than trusted from the caller. Observations with no
+    // attempt (adaptive knowledge checks) carry no administration and so no
+    // ceiling.
+    if (input.attemptId) {
+      const ceilingResult = await tx.execute(sql`
+        SELECT ta.effective_evidence_ceiling, lor.mastery_level, lo.canonical_code
+        FROM assessment.learner_attempt att
+        JOIN assessment.task_administration ta ON ta.id = att.task_administration_id
+        JOIN catalog.learning_objective_revision lor ON lor.id = ${input.objectiveRevisionId}
+        JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+        WHERE att.id = ${input.attemptId}
+      `);
+      const row = ceilingResult.rows[0];
+      if (row && Number(row.mastery_level) > Number(row.effective_evidence_ceiling)) {
+        throw new Error(
+          `administration effective ceiling L${row.effective_evidence_ceiling} cannot establish ${row.canonical_code} (L${row.mastery_level})`,
+        );
+      }
+    }
+
     const [observation] = await tx
       .insert(s.observation)
       .values({

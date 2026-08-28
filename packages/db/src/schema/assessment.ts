@@ -99,7 +99,7 @@ export const taskRevision = assessmentSchema.table(
     taskKind: taskKindEnum("task_kind").notNull(),
     scenario: text("scenario").notNull(),
     instructions: text("instructions").notNull().default(""),
-    evidenceCeiling: smallint("evidence_ceiling").notNull(),
+    designEvidenceCeiling: smallint("design_evidence_ceiling").notNull(),
     estimatedMinutes: integer("estimated_minutes"),
     environmentConfig: jsonb("environment_config").notNull().default(sql`'{}'::jsonb`),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
@@ -108,7 +108,7 @@ export const taskRevision = assessmentSchema.table(
   (t) => [
     unique("uq_task_revision_no").on(t.taskTemplateId, t.revisionNo),
     check("ck_task_revision_no_positive", sql`revision_no > 0`),
-    check("ck_task_evidence_ceiling", sql`evidence_ceiling BETWEEN 1 AND 5`),
+    check("ck_task_design_evidence_ceiling", sql`design_evidence_ceiling BETWEEN 1 AND 5`),
     check("ck_task_estimated_minutes", sql`estimated_minutes IS NULL OR estimated_minutes >= 0`),
   ],
 );
@@ -231,6 +231,10 @@ export const taskAdministration = assessmentSchema.table(
     assistancePolicy: jsonb("assistance_policy").notNull().default(sql`'{}'::jsonb`),
     timeLimitMinutes: integer("time_limit_minutes"),
     processCaptureEnabled: boolean("process_capture_enabled").notNull().default(false),
+    // The ceiling given the assistance PERMITTED by this administration, not
+    // the assistance actually consumed. A practice run with hints available
+    // carries the reduced ceiling even if the learner never opens a hint.
+    effectiveEvidenceCeiling: smallint("effective_evidence_ceiling").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   () => [
@@ -238,6 +242,7 @@ export const taskAdministration = assessmentSchema.table(
       "ck_administration_time_limit",
       sql`time_limit_minutes IS NULL OR time_limit_minutes > 0`,
     ),
+    check("ck_administration_effective_ceiling", sql`effective_evidence_ceiling BETWEEN 1 AND 5`),
   ],
 );
 

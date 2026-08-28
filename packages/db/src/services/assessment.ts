@@ -40,7 +40,7 @@ export async function createTask(
         taskKind: seed.taskKind,
         scenario: seed.scenario,
         instructions: seed.instructions,
-        evidenceCeiling: seed.evidenceCeiling,
+        designEvidenceCeiling: seed.designEvidenceCeiling,
         estimatedMinutes: seed.estimatedMinutes,
       })
       .returning({ id: s.taskRevision.id });
@@ -78,10 +78,10 @@ export async function createTask(
       // §13.4: ceiling must cover every directly measured objective.
       if (
         spec.evidenceStrength === "direct" &&
-        Number(objective.mastery_level) > seed.evidenceCeiling
+        Number(objective.mastery_level) > seed.designEvidenceCeiling
       ) {
         throw new Error(
-          `task ${seed.code} ceiling ${seed.evidenceCeiling} is below directly measured objective ${spec.objectiveCode} (L${objective.mastery_level})`,
+          `task ${seed.code} design ceiling ${seed.designEvidenceCeiling} is below directly measured objective ${spec.objectiveCode} (L${objective.mastery_level})`,
         );
       }
 
@@ -148,6 +148,7 @@ export async function createTask(
           mode: administration.mode,
           assistancePolicy: administration.assistancePolicy,
           processCaptureEnabled: administration.processCaptureEnabled,
+          effectiveEvidenceCeiling: administration.effectiveEvidenceCeiling,
         })
         .returning({ id: s.taskAdministration.id });
       if (!created) throw new Error("failed to insert task administration");

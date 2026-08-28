@@ -30,7 +30,7 @@ export interface TaskSeed {
   taskKind: "exercise" | "lab" | "challenge" | "mission" | "workplace_portfolio";
   scenario: string;
   instructions: string;
-  evidenceCeiling: 1 | 2 | 3 | 4 | 5;
+  designEvidenceCeiling: 1 | 2 | 3 | 4 | 5;
   estimatedMinutes: number;
   variants: Array<{
     code: string;
@@ -44,6 +44,7 @@ export interface TaskSeed {
     mode: "practice" | "formative" | "summative" | "qualification";
     assistancePolicy: Record<string, unknown>;
     processCaptureEnabled: boolean;
+    effectiveEvidenceCeiling: 1 | 2 | 3 | 4 | 5;
   }>;
 }
 
@@ -55,7 +56,7 @@ export const rustFramingChallenge: TaskSeed = {
     "An unfamiliar Rust service receives length-prefixed messages over TCP. The current reader assumes that one read contains one complete message. Implement a correct reader that handles arbitrary read boundaries, multiple messages per read, EOF, and I/O errors without losing or duplicating bytes.",
   instructions:
     "Correct the framed-message reader. Preserve incomplete data across reads. Add or use tests covering varied read boundaries. Do not change the wire protocol.",
-  evidenceCeiling: 3,
+  designEvidenceCeiling: 3,
   estimatedMinutes: 120,
   variants: [
     {
@@ -170,9 +171,9 @@ export const rustFramingChallenge: TaskSeed = {
         hints: true,
         aiTutor: true,
         immediateFeedback: true,
-        evidenceCeilingReduced: true,
       },
       processCaptureEnabled: false,
+      effectiveEvidenceCeiling: 2,
     },
     {
       variantCode: "variant-split-header",
@@ -188,6 +189,7 @@ export const rustFramingChallenge: TaskSeed = {
         minimumPerformanceScope: "focused",
       },
       processCaptureEnabled: true,
+      effectiveEvidenceCeiling: 3,
     },
   ],
 };
