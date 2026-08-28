@@ -15,6 +15,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { evidenceSpecObservable, learnerAttempt, taskObjectiveEvidenceSpec } from "./assessment";
 import { learningObjectiveRevision } from "./catalog";
+import { contextDimension, contextValue } from "./context";
 import {
   evidenceOriginEnum,
   evidenceSchema,
@@ -118,6 +119,22 @@ export const observableResult = evidenceSchema.table(
     }),
     check("ck_observable_result_score", sql`score IS NULL OR score BETWEEN 0 AND 1`),
   ],
+);
+
+export const observationContext = evidenceSchema.table(
+  "observation_context",
+  {
+    observationId: uuid("observation_id")
+      .notNull()
+      .references(() => observation.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    contextValueId: uuid("context_value_id")
+      .notNull()
+      .references(() => contextValue.id),
+  },
+  (t) => [primaryKey({ columns: [t.observationId, t.dimensionCode] })],
 );
 
 export const observationArtifact = evidenceSchema.table(

@@ -6,6 +6,7 @@ import {
   integer,
   jsonb,
   numeric,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -13,6 +14,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { frameworkRelease, learningObjectiveRevision } from "./catalog";
+import { contextDimension, contextValue } from "./context";
 import {
   administrationModeEnum,
   assessmentSchema,
@@ -123,6 +125,22 @@ export const taskVariant = assessmentSchema.table(
     active: boolean("active").notNull().default(true),
   },
   (t) => [unique("uq_task_variant_code").on(t.taskRevisionId, t.code)],
+);
+
+export const taskVariantContext = assessmentSchema.table(
+  "task_variant_context",
+  {
+    taskVariantId: uuid("task_variant_id")
+      .notNull()
+      .references(() => taskVariant.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    contextValueId: uuid("context_value_id")
+      .notNull()
+      .references(() => contextValue.id),
+  },
+  (t) => [primaryKey({ columns: [t.taskVariantId, t.dimensionCode] })],
 );
 
 export const taskObjectiveEvidenceSpec = assessmentSchema.table(

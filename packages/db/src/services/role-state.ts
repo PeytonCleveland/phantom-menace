@@ -39,12 +39,20 @@ export interface RoleStateResult {
   blockers: string[];
 }
 
+export interface RequirementContextCheck {
+  dimensionCode: string;
+  /** Pinned value code, or null when the requirement demands breadth instead. */
+  valueCode: string | null;
+  minimumDistinctValues: number;
+}
+
 export interface EvidencePolicyCheck {
   directEvidenceRequired: boolean;
   proxyEvidenceAllowed: boolean;
   minimumIndependence: number | null;
   minimumTransfer: TransferLevel | null;
   maximumEvidenceAge: string | null;
+  contexts: RequirementContextCheck[];
 }
 
 /**
@@ -58,13 +66,93 @@ export async function checkObjectiveSatisfaction(
   objectiveRevisionId: string,
   policy: EvidencePolicyCheck,
 ): Promise<{ satisfied: boolean; via: "direct" | "proxy" | null; reason: string }> {
-  const assertionResult = await db.execute(sql`
-    SELECT state FROM learner.objective_assertion
-    WHERE learner_id = ${learnerId} AND objective_revision_id = ${objectiveRevisionId}
+  // Assertions are scoped by context. A requirement pinning value V is
+  // satisfied by an assertion at V or ANY DESCENDANT of V, because a child
+  // value means "evidence here is valid evidence for the parent".
+  //
+  // This walks structured context rows. It must never compare context_key
+  // strings: an assertion keyed cloud_provider=aws_govcloud satisfies a
+  // requirement for cloud_provider=aws, and those strings differ.
+  //
+  // Built as ARRAY[...]::text[] (via sql.join) rather than interpolating the
+  // JS array directly: drizzle's sql`` tag renders an interpolated array as
+  // a parenthesized, comma-separated param list (e.g. `($1, $2)`), not a
+  // bound Postgres array — so `${arr}::text[]` is invalid SQL, and doubly so
+  // when `arr` is empty (`()::text[]` is a syntax error). ARRAY[]::text[] is
+  // valid and denotes "no pinned dimensions" correctly.
+  const pinnedContexts = policy.contexts.filter((c) => c.valueCode !== null);
+  const assertionsResult = await db.execute(sql`
+    WITH RECURSIVE pinned AS (
+      SELECT cv.id, cv.dimension_code
+      FROM catalog.context_value cv
+      WHERE (cv.dimension_code, cv.code) IN (
+        SELECT * FROM unnest(
+          ARRAY[${sql.join(
+            pinnedContexts.map((c) => sql`${c.dimensionCode}`),
+            sql`, `,
+          )}]::text[],
+          ARRAY[${sql.join(
+            pinnedContexts.map((c) => sql`${c.valueCode as string}`),
+            sql`, `,
+          )}]::text[]
+        )
+      )
+      UNION ALL
+      SELECT child.id, child.dimension_code
+      FROM catalog.context_value child
+      JOIN pinned ON child.parent_value_id = pinned.id
+    )
+    SELECT a.id, a.state, a.context_key
+    FROM learner.objective_assertion a
+    WHERE a.learner_id = ${learnerId}
+      AND a.objective_revision_id = ${objectiveRevisionId}
+      AND NOT EXISTS (
+        -- every pinned dimension must be matched by this assertion
+        SELECT 1 FROM unnest(
+          ARRAY[${sql.join(
+            pinnedContexts.map((c) => sql`${c.dimensionCode}`),
+            sql`, `,
+          )}]::text[]
+        ) AS required(dimension_code)
+        WHERE NOT EXISTS (
+          SELECT 1 FROM learner.objective_assertion_context ac
+          JOIN pinned ON pinned.id = ac.context_value_id
+          WHERE ac.assertion_id = a.id AND ac.dimension_code = required.dimension_code
+        )
+      )
   `);
-  const state = assertionResult.rows[0]?.state;
-  if (state !== "demonstrated") {
-    return { satisfied: false, via: null, reason: `assertion state is ${state ?? "unassessed"}` };
+
+  const demonstrated = assertionsResult.rows.filter((r) => r.state === "demonstrated");
+  if (demonstrated.length === 0) {
+    return {
+      satisfied: false,
+      via: null,
+      reason:
+        assertionsResult.rows.length === 0
+          ? "no assertion in the required context"
+          : "assertion exists in the required context but is not demonstrated",
+    };
+  }
+
+  // Breadth: count distinct qualifying values on each dimension that demands it.
+  for (const requirement of policy.contexts) {
+    if (requirement.minimumDistinctValues <= 1) continue;
+    const distinct = await db.execute(sql`
+      SELECT count(DISTINCT ac.context_value_id) AS n
+      FROM learner.objective_assertion a
+      JOIN learner.objective_assertion_context ac ON ac.assertion_id = a.id
+      WHERE a.learner_id = ${learnerId}
+        AND a.objective_revision_id = ${objectiveRevisionId}
+        AND a.state = 'demonstrated'
+        AND ac.dimension_code = ${requirement.dimensionCode}
+    `);
+    if (Number(distinct.rows[0]?.n ?? 0) < requirement.minimumDistinctValues) {
+      return {
+        satisfied: false,
+        via: null,
+        reason: `requires evidence in ${requirement.minimumDistinctValues} distinct ${requirement.dimensionCode} values`,
+      };
+    }
   }
 
   const observations = await db.execute(sql`
@@ -122,7 +210,7 @@ export async function evaluateRoleState(
   `);
 
   const requirementsResult = await db.execute(sql`
-    SELECT oreq.requirement_group_id, oreq.objective_revision_id,
+    SELECT oreq.id, oreq.requirement_group_id, oreq.objective_revision_id,
            oreq.direct_evidence_required, oreq.proxy_evidence_allowed,
            oreq.minimum_independence, oreq.minimum_transfer, oreq.maximum_evidence_age,
            lo.canonical_code
@@ -133,6 +221,27 @@ export async function evaluateRoleState(
     WHERE g.role_level_revision_id = ${roleLevelRevisionId}
     ORDER BY lo.canonical_code
   `);
+
+  const contextRows = await db.execute(sql`
+    SELECT orc.objective_requirement_id, orc.dimension_code, orc.minimum_distinct_values,
+           cv.code AS value_code
+    FROM qualification.objective_requirement_context orc
+    LEFT JOIN catalog.context_value cv ON cv.id = orc.context_value_id
+    JOIN qualification.objective_requirement oreq ON oreq.id = orc.objective_requirement_id
+    JOIN qualification.requirement_group g ON g.id = oreq.requirement_group_id
+    WHERE g.role_level_revision_id = ${roleLevelRevisionId}
+  `);
+  const contextsByRequirement = new Map<string, RequirementContextCheck[]>();
+  for (const row of contextRows.rows) {
+    const id = String(row.objective_requirement_id);
+    const list = contextsByRequirement.get(id) ?? [];
+    list.push({
+      dimensionCode: String(row.dimension_code),
+      valueCode: row.value_code === null ? null : String(row.value_code),
+      minimumDistinctValues: Number(row.minimum_distinct_values),
+    });
+    contextsByRequirement.set(id, list);
+  }
 
   // Evaluate every requirement once.
   const requirementsByGroup = new Map<string, RequirementEvaluation[]>();
@@ -152,6 +261,7 @@ export async function evaluateRoleState(
           row.minimum_independence === null ? null : Number(row.minimum_independence),
         minimumTransfer: (row.minimum_transfer as TransferLevel | null) ?? null,
         maximumEvidenceAge: row.maximum_evidence_age ? String(row.maximum_evidence_age) : null,
+        contexts: contextsByRequirement.get(String(row.id)) ?? [],
       },
     );
 

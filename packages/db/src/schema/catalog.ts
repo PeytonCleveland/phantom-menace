@@ -16,10 +16,12 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { contextDimension, contextValue } from "./context";
 import {
   assertionStateEnum,
   catalogSchema,
   competencyRelationshipTypeEnum,
+  contextPolicyEnum,
   evidenceImplicationTypeEnum,
   evidenceStrengthEnum,
   membershipRoleEnum,
@@ -255,6 +257,44 @@ export const frameworkReleaseObjective = catalogSchema.table(
       .references(() => learningObjectiveRevision.id),
   },
   (t) => [primaryKey({ columns: [t.frameworkReleaseId, t.objectiveRevisionId] })],
+);
+
+export const objectiveContextPolicy = catalogSchema.table(
+  "objective_context_policy",
+  {
+    objectiveRevisionId: uuid("objective_revision_id")
+      .notNull()
+      .references(() => learningObjectiveRevision.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    policy: contextPolicyEnum("policy").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.objectiveRevisionId, t.dimensionCode] })],
+);
+
+export const objectiveContextAllowedValue = catalogSchema.table(
+  "objective_context_allowed_value",
+  {
+    objectiveRevisionId: uuid("objective_revision_id")
+      .notNull()
+      .references(() => learningObjectiveRevision.id),
+    dimensionCode: text("dimension_code").notNull(),
+    contextValueId: uuid("context_value_id")
+      .notNull()
+      .references(() => contextValue.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.objectiveRevisionId, t.dimensionCode, t.contextValueId] }),
+    foreignKey({
+      name: "fk_objective_context_allowed_policy",
+      columns: [t.objectiveRevisionId, t.dimensionCode],
+      foreignColumns: [
+        objectiveContextPolicy.objectiveRevisionId,
+        objectiveContextPolicy.dimensionCode,
+      ],
+    }),
+  ],
 );
 
 export const competencyObjectiveMembership = catalogSchema.table(

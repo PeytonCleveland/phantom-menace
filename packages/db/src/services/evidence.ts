@@ -32,6 +32,8 @@ export interface RecordObservationInput {
   humanVerified?: boolean;
   details?: Record<string, unknown>;
   observableResults?: ObservableResultInput[];
+  /** Dimension code -> context value code, e.g. { cloud_provider: "aws" }. */
+  contexts?: Record<string, string>;
 }
 
 export async function recordObservation(
@@ -68,6 +70,22 @@ export async function recordObservation(
         result: observable.result,
         score: observable.score?.toString(),
         notes: observable.notes,
+      });
+    }
+
+    for (const [dimensionCode, valueCode] of Object.entries(input.contexts ?? {})) {
+      const valueResult = await tx.execute(sql`
+        SELECT id FROM catalog.context_value
+        WHERE dimension_code = ${dimensionCode} AND code = ${valueCode}
+      `);
+      const contextValueId = valueResult.rows[0]?.id;
+      if (typeof contextValueId !== "string") {
+        throw new Error(`unknown context value ${dimensionCode}:${valueCode}`);
+      }
+      await tx.insert(s.observationContext).values({
+        observationId: observation.id,
+        dimensionCode,
+        contextValueId,
       });
     }
 
@@ -202,6 +220,13 @@ export async function propagateFromObservation(
       .returning({ id: s.observation.id });
     if (!proxy) throw new Error("failed to insert proxy observation");
     result.createdProxyObservationIds.push(proxy.id);
+
+    // Proxy evidence inherits the context of the evidence it derives from.
+    await db.execute(sql`
+      INSERT INTO evidence.observation_context (observation_id, dimension_code, context_value_id)
+      SELECT ${proxy.id}, dimension_code, context_value_id
+      FROM evidence.observation_context WHERE observation_id = ${observationId}
+    `);
 
     // §14.5: recurse only when the rule is explicitly transitive.
     if (rule.transitive === true) {

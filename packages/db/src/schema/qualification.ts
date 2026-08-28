@@ -16,6 +16,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { taskRevision } from "./assessment";
 import { capabilitySetRevision, frameworkRelease, learningObjectiveRevision } from "./catalog";
+import { contextDimension, contextValue } from "./context";
 import {
   observationResultEnum,
   publicationStatusEnum,
@@ -128,6 +129,29 @@ export const objectiveRequirement = qualificationSchema.table(
       "ck_objective_requirement_independence",
       sql`minimum_independence IS NULL OR minimum_independence BETWEEN 0 AND 4`,
     ),
+  ],
+);
+
+export const objectiveRequirementContext = qualificationSchema.table(
+  "objective_requirement_context",
+  {
+    objectiveRequirementId: uuid("objective_requirement_id")
+      .notNull()
+      .references(() => objectiveRequirement.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    // Pin a value, or leave null and demand breadth. Never both.
+    contextValueId: uuid("context_value_id").references(() => contextValue.id),
+    minimumDistinctValues: integer("minimum_distinct_values").notNull().default(1),
+  },
+  (t) => [
+    primaryKey({ columns: [t.objectiveRequirementId, t.dimensionCode] }),
+    check(
+      "ck_requirement_context_pin_or_breadth",
+      sql`context_value_id IS NULL OR minimum_distinct_values = 1`,
+    ),
+    check("ck_requirement_context_minimum", sql`minimum_distinct_values >= 1`),
   ],
 );
 

@@ -1,5 +1,5 @@
 {
-  "id": "7d1e0c08-bf0f-4545-9bac-c0ee446478a8",
+  "id": "3a565444-df4e-454f-a35e-649b206e1575",
   "prevId": "7efef10c-3a93-493b-ad2c-9923d0b9feeb",
   "version": "7",
   "dialect": "postgresql",
@@ -8,14 +8,8 @@
       "name": "assertion_evidence",
       "schema": "learner",
       "columns": {
-        "learner_id": {
-          "name": "learner_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "objective_revision_id": {
-          "name": "objective_revision_id",
+        "assertion_id": {
+          "name": "assertion_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -36,6 +30,20 @@
       },
       "indexes": {},
       "foreignKeys": {
+        "assertion_evidence_assertion_id_objective_assertion_id_fk": {
+          "name": "assertion_evidence_assertion_id_objective_assertion_id_fk",
+          "tableFrom": "assertion_evidence",
+          "tableTo": "objective_assertion",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "assertion_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "assertion_evidence_evidence_observation_id_observation_id_fk": {
           "name": "assertion_evidence_evidence_observation_id_observation_id_fk",
           "tableFrom": "assertion_evidence",
@@ -49,30 +57,13 @@
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
-        },
-        "fk_assertion_evidence_assertion": {
-          "name": "fk_assertion_evidence_assertion",
-          "tableFrom": "assertion_evidence",
-          "tableTo": "objective_assertion",
-          "schemaTo": "learner",
-          "columnsFrom": [
-            "learner_id",
-            "objective_revision_id"
-          ],
-          "columnsTo": [
-            "learner_id",
-            "objective_revision_id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {
-        "assertion_evidence_learner_id_objective_revision_id_evidence_observation_id_pk": {
-          "name": "assertion_evidence_learner_id_objective_revision_id_evidence_observation_id_pk",
+        "assertion_evidence_assertion_id_evidence_observation_id_pk": {
+          "name": "assertion_evidence_assertion_id_evidence_observation_id_pk",
           "columns": [
-            "learner_id",
-            "objective_revision_id",
+            "assertion_id",
             "evidence_observation_id"
           ]
         }
@@ -91,6 +82,13 @@
       "name": "objective_assertion",
       "schema": "learner",
       "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
         "learner_id": {
           "name": "learner_id",
           "type": "uuid",
@@ -102,6 +100,13 @@
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
+        },
+        "context_key": {
+          "name": "context_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
         },
         "state": {
           "name": "state",
@@ -173,16 +178,18 @@
           "onUpdate": "no action"
         }
       },
-      "compositePrimaryKeys": {
-        "objective_assertion_learner_id_objective_revision_id_pk": {
-          "name": "objective_assertion_learner_id_objective_revision_id_pk",
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_objective_assertion_scope": {
+          "name": "uq_objective_assertion_scope",
+          "nullsNotDistinct": false,
           "columns": [
             "learner_id",
-            "objective_revision_id"
+            "objective_revision_id",
+            "context_key"
           ]
         }
       },
-      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {
         "ck_assertion_confidence": {
@@ -190,6 +197,88 @@
           "value": "confidence BETWEEN 0 AND 1"
         }
       },
+      "isRLSEnabled": false
+    },
+    "learner.objective_assertion_context": {
+      "name": "objective_assertion_context",
+      "schema": "learner",
+      "columns": {
+        "assertion_id": {
+          "name": "assertion_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dimension_code": {
+          "name": "dimension_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context_value_id": {
+          "name": "context_value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_assertion_context_assertion_id_objective_assertion_id_fk": {
+          "name": "objective_assertion_context_assertion_id_objective_assertion_id_fk",
+          "tableFrom": "objective_assertion_context",
+          "tableTo": "objective_assertion",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "assertion_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "objective_assertion_context_dimension_code_context_dimension_code_fk": {
+          "name": "objective_assertion_context_dimension_code_context_dimension_code_fk",
+          "tableFrom": "objective_assertion_context",
+          "tableTo": "context_dimension",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "dimension_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_assertion_context_context_value_id_context_value_id_fk": {
+          "name": "objective_assertion_context_context_value_id_context_value_id_fk",
+          "tableFrom": "objective_assertion_context",
+          "tableTo": "context_value",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "context_value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_assertion_context_assertion_id_dimension_code_pk": {
+          "name": "objective_assertion_context_assertion_id_dimension_code_pk",
+          "columns": [
+            "assertion_id",
+            "dimension_code"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "assessment.evidence_spec_observable": {
@@ -1116,6 +1205,88 @@
           ]
         }
       },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "assessment.task_variant_context": {
+      "name": "task_variant_context",
+      "schema": "assessment",
+      "columns": {
+        "task_variant_id": {
+          "name": "task_variant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dimension_code": {
+          "name": "dimension_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context_value_id": {
+          "name": "context_value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "task_variant_context_task_variant_id_task_variant_id_fk": {
+          "name": "task_variant_context_task_variant_id_task_variant_id_fk",
+          "tableFrom": "task_variant_context",
+          "tableTo": "task_variant",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "task_variant_context_dimension_code_context_dimension_code_fk": {
+          "name": "task_variant_context_dimension_code_context_dimension_code_fk",
+          "tableFrom": "task_variant_context",
+          "tableTo": "context_dimension",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "dimension_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "task_variant_context_context_value_id_context_value_id_fk": {
+          "name": "task_variant_context_context_value_id_context_value_id_fk",
+          "tableFrom": "task_variant_context",
+          "tableTo": "context_value",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "context_value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "task_variant_context_task_variant_id_dimension_code_pk": {
+          "name": "task_variant_context_task_variant_id_dimension_code_pk",
+          "columns": [
+            "task_variant_id",
+            "dimension_code"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -3055,6 +3226,160 @@
       },
       "isRLSEnabled": false
     },
+    "catalog.objective_context_allowed_value": {
+      "name": "objective_context_allowed_value",
+      "schema": "catalog",
+      "columns": {
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dimension_code": {
+          "name": "dimension_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context_value_id": {
+          "name": "context_value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_context_allowed_value_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_context_allowed_value_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_context_allowed_value",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_context_allowed_value_context_value_id_context_value_id_fk": {
+          "name": "objective_context_allowed_value_context_value_id_context_value_id_fk",
+          "tableFrom": "objective_context_allowed_value",
+          "tableTo": "context_value",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "context_value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_objective_context_allowed_policy": {
+          "name": "fk_objective_context_allowed_policy",
+          "tableFrom": "objective_context_allowed_value",
+          "tableTo": "objective_context_policy",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id",
+            "dimension_code"
+          ],
+          "columnsTo": [
+            "objective_revision_id",
+            "dimension_code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_context_allowed_value_objective_revision_id_dimension_code_context_value_id_pk": {
+          "name": "objective_context_allowed_value_objective_revision_id_dimension_code_context_value_id_pk",
+          "columns": [
+            "objective_revision_id",
+            "dimension_code",
+            "context_value_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.objective_context_policy": {
+      "name": "objective_context_policy",
+      "schema": "catalog",
+      "columns": {
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dimension_code": {
+          "name": "dimension_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "policy": {
+          "name": "policy",
+          "type": "context_policy",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_context_policy_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_context_policy_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_context_policy",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_context_policy_dimension_code_context_dimension_code_fk": {
+          "name": "objective_context_policy_dimension_code_context_dimension_code_fk",
+          "tableFrom": "objective_context_policy",
+          "tableTo": "context_dimension",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "dimension_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_context_policy_objective_revision_id_dimension_code_pk": {
+          "name": "objective_context_policy_objective_revision_id_dimension_code_pk",
+          "columns": [
+            "objective_revision_id",
+            "dimension_code"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "catalog.objective_evidence_implication": {
       "name": "objective_evidence_implication",
       "schema": "catalog",
@@ -4278,6 +4603,88 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "evidence.observation_context": {
+      "name": "observation_context",
+      "schema": "evidence",
+      "columns": {
+        "observation_id": {
+          "name": "observation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dimension_code": {
+          "name": "dimension_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context_value_id": {
+          "name": "context_value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "observation_context_observation_id_observation_id_fk": {
+          "name": "observation_context_observation_id_observation_id_fk",
+          "tableFrom": "observation_context",
+          "tableTo": "observation",
+          "schemaTo": "evidence",
+          "columnsFrom": [
+            "observation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_context_dimension_code_context_dimension_code_fk": {
+          "name": "observation_context_dimension_code_context_dimension_code_fk",
+          "tableFrom": "observation_context",
+          "tableTo": "context_dimension",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "dimension_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_context_context_value_id_context_value_id_fk": {
+          "name": "observation_context_context_value_id_context_value_id_fk",
+          "tableFrom": "observation_context",
+          "tableTo": "context_value",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "context_value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "observation_context_observation_id_dimension_code_pk": {
+          "name": "observation_context_observation_id_dimension_code_pk",
+          "columns": [
+            "observation_id",
+            "dimension_code"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "learner.profile": {
       "name": "profile",
       "schema": "learner",
@@ -5240,6 +5647,104 @@
         "ck_objective_requirement_independence": {
           "name": "ck_objective_requirement_independence",
           "value": "minimum_independence IS NULL OR minimum_independence BETWEEN 0 AND 4"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "qualification.objective_requirement_context": {
+      "name": "objective_requirement_context",
+      "schema": "qualification",
+      "columns": {
+        "objective_requirement_id": {
+          "name": "objective_requirement_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "dimension_code": {
+          "name": "dimension_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context_value_id": {
+          "name": "context_value_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "minimum_distinct_values": {
+          "name": "minimum_distinct_values",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_requirement_context_objective_requirement_id_objective_requirement_id_fk": {
+          "name": "objective_requirement_context_objective_requirement_id_objective_requirement_id_fk",
+          "tableFrom": "objective_requirement_context",
+          "tableTo": "objective_requirement",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "objective_requirement_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_requirement_context_dimension_code_context_dimension_code_fk": {
+          "name": "objective_requirement_context_dimension_code_context_dimension_code_fk",
+          "tableFrom": "objective_requirement_context",
+          "tableTo": "context_dimension",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "dimension_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_requirement_context_context_value_id_context_value_id_fk": {
+          "name": "objective_requirement_context_context_value_id_context_value_id_fk",
+          "tableFrom": "objective_requirement_context",
+          "tableTo": "context_value",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "context_value_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_requirement_context_objective_requirement_id_dimension_code_pk": {
+          "name": "objective_requirement_context_objective_requirement_id_dimension_code_pk",
+          "columns": [
+            "objective_requirement_id",
+            "dimension_code"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_requirement_context_pin_or_breadth": {
+          "name": "ck_requirement_context_pin_or_breadth",
+          "value": "context_value_id IS NULL OR minimum_distinct_values = 1"
+        },
+        "ck_requirement_context_minimum": {
+          "name": "ck_requirement_context_minimum",
+          "value": "minimum_distinct_values >= 1"
         }
       },
       "isRLSEnabled": false

@@ -153,7 +153,7 @@ async function main(): Promise<void> {
       "NET-TCP-L1-003",
       "NET-TCP-L1-004",
     ]) {
-      const outcome = outcomes.get(ctx.objective(code));
+      const outcome = outcomes.get(ctx.objective(code))?.[0];
       if (outcome) {
         console.log(`   ${code}: ${outcome.state} (confidence ${outcome.confidence.toFixed(2)})`);
       }
@@ -169,8 +169,7 @@ async function main(): Promise<void> {
              src.id AS source_observation_id,
              srclo.canonical_code AS source_objective
       FROM learner.objective_assertion a
-      JOIN learner.assertion_evidence ae
-        ON ae.learner_id = a.learner_id AND ae.objective_revision_id = a.objective_revision_id
+      JOIN learner.assertion_evidence ae ON ae.assertion_id = a.id
       JOIN evidence.observation o ON o.id = ae.evidence_observation_id
       LEFT JOIN evidence.observation src ON src.id = o.source_evidence_id
       LEFT JOIN catalog.learning_objective_revision srclor ON srclor.id = src.objective_revision_id
@@ -212,6 +211,7 @@ async function main(): Promise<void> {
         minimumIndependence: 3,
         minimumTransfer: "near",
         maximumEvidenceAge: null,
+        contexts: [],
       },
     );
     console.log(
@@ -227,6 +227,7 @@ async function main(): Promise<void> {
         minimumIndependence: 3,
         minimumTransfer: "near",
         maximumEvidenceAge: null,
+        contexts: [],
       },
     );
     console.log(

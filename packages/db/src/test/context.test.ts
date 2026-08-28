@@ -1,8 +1,10 @@
 import { eq, sql } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
 import * as s from "../schema/index";
+import { recalculateForObservations } from "../services/assertions";
 import { ContextService, canonicalContextKey } from "../services/context";
-import { withDb } from "./helpers";
+import { recordObservation } from "../services/evidence";
+import { createLearner, objectiveId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
 afterAll(async () => {
@@ -103,4 +105,24 @@ test("an update that would create a parent cycle is rejected", async () => {
     await db.delete(s.contextValue).where(eq(s.contextValue.dimensionCode, dim));
     await db.delete(s.contextDimension).where(eq(s.contextDimension.code, dim));
   }
+});
+
+test("an objective with no required dimensions keys its assertion to the empty string", async () => {
+  const learnerId = await createLearner(db, "ctx-empty-key");
+  const target = await objectiveId(db, "NET-TCP-L1-001");
+
+  const observationId = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferLevel: "near",
+  });
+  const outcomes = await recalculateForObservations(db, [observationId]);
+
+  const forObjective = outcomes.get(target);
+  expect(forObjective).toHaveLength(1);
+  expect(forObjective?.[0]?.contextKey).toBe("");
+  expect(forObjective?.[0]?.state).toBe("demonstrated");
 });
