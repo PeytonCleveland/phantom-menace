@@ -49,12 +49,19 @@ SQL; squashing means regenerating `0000` and reconciling triggers by hand agains
 a changed baseline, which is where the risk lives. `db:reset` drops the volume,
 so a clean local rebuild costs nothing.
 
-Two migrations:
+Three migrations, expand / migrate / contract, so the repo runs green at every
+task boundary rather than only at the end:
 
-- `0003_evidence_semantics.sql` — drizzle-generated DDL.
+- `0003_evidence_semantics.sql` — drizzle-generated, purely additive. New tables
+  and new columns alongside the ones they replace.
 - `0004_evidence_semantics_governance.sql` — hand-written: the canonicalization
-  function, the effective-ceiling trigger, and immutability guards for the new
-  objective-revision child tables.
+  function, context-value guards, the effective-ceiling trigger, the
+  implication-criterion source guard, and the immutability surface in §8.
+- `0005_evidence_semantics_contract.sql` — drizzle-generated drops, taken only
+  after the seed has been rewritten onto the new columns.
+
+(The design originally called for a pair; the third exists so no commit leaves
+`db:reset` broken.)
 
 ---
 
