@@ -1,0 +1,12 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+allowBuilds:
+  "@biomejs/biome": true
+  esbuild: true
+
+# Biome 2.5.11 was published within pnpm's default minimumReleaseAge window.
+# Remove this exclusion once the release is older than the policy cutoff.
+minimumReleaseAgeExclude:
+  - "@biomejs/*"

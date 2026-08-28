@@ -1,0 +1,19 @@
+{
+  "name": "@lighthouse/auth",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@lighthouse/db": "workspace:*",
+    "better-auth": "^1.7.2"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
