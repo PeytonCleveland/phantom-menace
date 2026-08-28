@@ -2,6 +2,7 @@ export * from "./assertions";
 export * from "./assessment";
 export * from "./auth";
 export * from "./catalog";
+export * from "./context";
 export * from "./enums";
 export * from "./evidence";
 export * from "./learner";

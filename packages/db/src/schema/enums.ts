@@ -49,6 +49,12 @@ export const relationshipProvenanceEnum = catalogSchema.enum("relationship_prove
   "empirical",
 ]);
 
+export const contextPolicyEnum = catalogSchema.enum("context_policy", [
+  "required",
+  "optional",
+  "not_applicable",
+]);
+
 export const objectiveRelationshipTypeEnum = catalogSchema.enum("objective_relationship_type", [
   "performance_requires",
   "learning_precedes",
