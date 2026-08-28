@@ -1,0 +1,150 @@
+import { sql } from "drizzle-orm";
+import type { Database } from "../client";
+import * as s from "../schema/index";
+import type { TaskSeed } from "../seed/data/tasks";
+
+/**
+ * Task creation (spec §12.15, §13.4).
+ * Enforces: evidence ceiling must be at least the level of every directly
+ * measured objective, and direct Class B/C mappings must declare observables.
+ */
+
+export interface CreatedTask {
+  taskTemplateId: string;
+  taskRevisionId: string;
+  variantIdByCode: Map<string, string>;
+  administrationIdByMode: Map<string, string>;
+  evidenceSpecIdByObjectiveCode: Map<string, string>;
+}
+
+export async function createTask(
+  db: Database,
+  frameworkReleaseId: string,
+  seed: TaskSeed,
+): Promise<CreatedTask> {
+  return db.transaction(async (tx) => {
+    const [template] = await tx
+      .insert(s.taskTemplate)
+      .values({ canonicalCode: seed.code })
+      .returning({ id: s.taskTemplate.id });
+    if (!template) throw new Error(`failed to insert task template ${seed.code}`);
+
+    const [revision] = await tx
+      .insert(s.taskRevision)
+      .values({
+        taskTemplateId: template.id,
+        revisionNo: 1,
+        frameworkReleaseId,
+        title: seed.title,
+        taskKind: seed.taskKind,
+        scenario: seed.scenario,
+        instructions: seed.instructions,
+        evidenceCeiling: seed.evidenceCeiling,
+        estimatedMinutes: seed.estimatedMinutes,
+      })
+      .returning({ id: s.taskRevision.id });
+    if (!revision) throw new Error(`failed to insert task revision ${seed.code}`);
+
+    const variantIdByCode = new Map<string, string>();
+    for (const variant of seed.variants) {
+      const [created] = await tx
+        .insert(s.taskVariant)
+        .values({
+          taskRevisionId: revision.id,
+          code: variant.code,
+          variantConfig: variant.variantConfig,
+          noveltyDefault: variant.noveltyDefault,
+        })
+        .returning({ id: s.taskVariant.id });
+      if (!created) throw new Error(`failed to insert variant ${variant.code}`);
+      variantIdByCode.set(variant.code, created.id);
+    }
+
+    const evidenceSpecIdByObjectiveCode = new Map<string, string>();
+    for (const spec of seed.evidenceSpecs) {
+      const objectiveResult = await tx.execute(sql`
+        SELECT lor.id, lor.mastery_level, lor.assurance_class
+        FROM catalog.learning_objective_revision lor
+        JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+        JOIN catalog.framework_release_objective fro ON fro.objective_revision_id = lor.id
+        WHERE lo.canonical_code = ${spec.objectiveCode}
+          AND fro.framework_release_id = ${frameworkReleaseId}
+      `);
+      const objective = objectiveResult.rows[0];
+      if (!objective) throw new Error(`objective ${spec.objectiveCode} not found in release`);
+
+      // §13.4: ceiling must cover every directly measured objective.
+      if (
+        spec.evidenceStrength === "direct" &&
+        Number(objective.mastery_level) > seed.evidenceCeiling
+      ) {
+        throw new Error(
+          `task ${seed.code} ceiling ${seed.evidenceCeiling} is below directly measured objective ${spec.objectiveCode} (L${objective.mastery_level})`,
+        );
+      }
+
+      // §13.4: Class B/C direct evidence mappings must have observables.
+      if (
+        spec.evidenceStrength === "direct" &&
+        ["B", "C"].includes(String(objective.assurance_class)) &&
+        (spec.observables ?? []).length === 0
+      ) {
+        throw new Error(
+          `direct evidence spec for Class ${objective.assurance_class} objective ${spec.objectiveCode} must declare observables`,
+        );
+      }
+
+      const [createdSpec] = await tx
+        .insert(s.taskObjectiveEvidenceSpec)
+        .values({
+          taskRevisionId: revision.id,
+          objectiveRevisionId: objective.id as string,
+          claimRole: spec.claimRole,
+          evidenceStrength: spec.evidenceStrength,
+          minimumIndependence: spec.minimumIndependence,
+          minimumTransfer: spec.minimumTransfer,
+          directEvidenceRequired: spec.directEvidenceRequired ?? false,
+          proxyPropagationAllowed: spec.proxyPropagationAllowed ?? true,
+        })
+        .returning({ id: s.taskObjectiveEvidenceSpec.id });
+      if (!createdSpec) throw new Error(`failed to insert evidence spec ${spec.objectiveCode}`);
+      evidenceSpecIdByObjectiveCode.set(spec.objectiveCode, createdSpec.id);
+
+      for (const [index, observable] of (spec.observables ?? []).entries()) {
+        await tx.insert(s.evidenceSpecObservable).values({
+          evidenceSpecId: createdSpec.id,
+          code: observable.code,
+          statement: observable.statement,
+          observableType: observable.observableType,
+          critical: observable.critical,
+          sortOrder: index,
+        });
+      }
+    }
+
+    const administrationIdByMode = new Map<string, string>();
+    for (const administration of seed.administrations) {
+      const variantId = variantIdByCode.get(administration.variantCode);
+      if (!variantId) throw new Error(`unknown variant ${administration.variantCode}`);
+      const [created] = await tx
+        .insert(s.taskAdministration)
+        .values({
+          taskVariantId: variantId,
+          mode: administration.mode,
+          assistancePolicy: administration.assistancePolicy,
+          processCaptureEnabled: administration.processCaptureEnabled,
+        })
+        .returning({ id: s.taskAdministration.id });
+      if (!created) throw new Error("failed to insert task administration");
+      administrationIdByMode.set(administration.mode, created.id);
+    }
+
+    return {
+      taskTemplateId: template.id,
+      taskRevisionId: revision.id,
+      variantIdByCode,
+      administrationIdByMode,
+      evidenceSpecIdByObjectiveCode,
+    };
+  });
+}

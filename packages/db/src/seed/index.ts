@@ -2,6 +2,7 @@ import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { createDb } from "../client";
 import * as s from "../schema/index";
+import { createTask } from "../services/assessment";
 import { CapabilitySetService } from "../services/capability-sets";
 import { CatalogSession, createRelease, ensureFramework } from "../services/catalog";
 import { publishRelease } from "../services/publication";
@@ -15,6 +16,7 @@ import {
   objectiveRelationships,
 } from "./data/relationships";
 import { capabilitySets, softwareEngineerL3Composition, softwareEngineerRole } from "./data/roles";
+import { rustFramingChallenge } from "./data/tasks";
 import { verbs } from "./data/verbs";
 
 const FRAMEWORK_CODE = "SWE";
@@ -99,6 +101,13 @@ async function main(): Promise<void> {
     }
     console.log(
       `   ${competencyRelationships.length} competency edges, ${objectiveRelationships.length} objective edges, ${evidenceImplications.length} implications`,
+    );
+
+    console.log("── Tasks and evidence contracts (§19)");
+    const task = await createTask(db, releaseId, rustFramingChallenge);
+    console.log(
+      `   ${rustFramingChallenge.code}: ${task.evidenceSpecIdByObjectiveCode.size} evidence specs, ` +
+        `${task.variantIdByCode.size} variants, ${task.administrationIdByMode.size} administrations`,
     );
 
     console.log("── Capability sets (§20)");
