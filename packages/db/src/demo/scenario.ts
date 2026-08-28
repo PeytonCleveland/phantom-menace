@@ -165,7 +165,7 @@ async function main(): Promise<void> {
       SELECT a.state, a.confidence,
              o.id AS observation_id, o.origin, o.evidence_strength,
              o.details->>'implicationType' AS rule_type,
-             o.details->'requiredObservableCodes' AS gated_observables,
+             o.details->'requiredCriterionCodes' AS gated_criteria,
              src.id AS source_observation_id,
              srclo.canonical_code AS source_objective
       FROM learner.objective_assertion a
@@ -186,7 +186,7 @@ async function main(): Promise<void> {
         console.log(
           `   derived from: direct evidence on ${row.source_objective} via ${row.rule_type}`,
         );
-        console.log(`   gated by observables: ${JSON.stringify(row.gated_observables)}`);
+        console.log(`   gated by criteria: ${JSON.stringify(row.gated_criteria)}`);
       }
     }
 

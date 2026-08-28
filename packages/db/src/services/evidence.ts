@@ -7,8 +7,9 @@ import * as s from "../schema/index";
  *
  * Observations are append-only (DB-enforced). Propagation runs only from
  * successful direct-origin observations, through SME-approved automatic
- * implication rules, gated on required observables and critical errors, and
- * never recurses from proxy evidence unless the rule is explicitly transitive.
+ * implication rules, gated on required objective criteria and critical-error
+ * criteria, and never recurses from proxy evidence unless the rule is
+ * explicitly transitive.
  */
 
 export interface ObservableResultInput {
@@ -98,6 +99,54 @@ export interface PropagationResult {
   skipped: Array<{ targetObjectiveCode: string; reason: string }>;
 }
 
+export interface CriterionOutcomeSummary {
+  /** Criterion ids with at least one mapped observable result of 'successful'. */
+  established: Set<string>;
+  /** Criterion ids with at least one mapped observable result of any kind. */
+  observed: Set<string>;
+  /** Codes of critical_error criteria whose mapped observable did not succeed. */
+  triggeredCriticalErrorCodes: string[];
+}
+
+/**
+ * Resolve one observation's observable results up to the criteria they establish.
+ *
+ * Polarity is always positive: `successful` means the good outcome obtained.
+ * For a critical_error criterion that means the error was AVOIDED, so an
+ * `unsuccessful` result on a mapped observable is what fires it.
+ */
+export async function summarizeCriterionOutcomes(
+  db: Database,
+  observationId: string,
+): Promise<CriterionOutcomeSummary> {
+  const rows = await db.execute(sql`
+    SELECT c.id, c.code, c.kind, r.result
+    FROM evidence.observable_result r
+    JOIN assessment.evidence_spec_observable obs
+      ON obs.evidence_spec_id = r.evidence_spec_id AND obs.code = r.observable_code
+    JOIN assessment.observable_criterion_mapping m
+      ON m.evidence_spec_observable_id = obs.id
+    JOIN catalog.objective_criterion c ON c.id = m.objective_criterion_id
+    WHERE r.evidence_observation_id = ${observationId}
+  `);
+
+  const established = new Set<string>();
+  const observed = new Set<string>();
+  const triggeredCriticalErrorCodes: string[] = [];
+
+  for (const row of rows.rows) {
+    const criterionId = String(row.id);
+    observed.add(criterionId);
+    if (row.result === "successful") {
+      established.add(criterionId);
+    } else if (row.kind === "critical_error") {
+      triggeredCriticalErrorCodes.push(String(row.code));
+    }
+  }
+
+  return { established, observed, triggeredCriticalErrorCodes };
+}
+
 /**
  * §14 steps 4–5: propagate proxy evidence from one direct observation.
  */
@@ -133,20 +182,13 @@ export async function propagateFromObservation(
     return result;
   }
 
-  // §14.4g: critical errors on the source block propagation — any critical
-  // observable that was not successful.
-  const criticalFailures = await db.execute(sql`
-    SELECT obs.code
-    FROM evidence.observable_result r
-    JOIN assessment.evidence_spec_observable obs
-      ON obs.evidence_spec_id = r.evidence_spec_id AND obs.code = r.observable_code
-    WHERE r.evidence_observation_id = ${observationId}
-      AND obs.critical AND r.result <> 'successful'
-  `);
-  if (criticalFailures.rows.length > 0) {
+  const outcomes = await summarizeCriterionOutcomes(db, observationId);
+
+  // A triggered critical-error criterion blocks every rule from this evidence.
+  if (outcomes.triggeredCriticalErrorCodes.length > 0) {
     result.skipped.push({
       targetObjectiveCode: "*",
-      reason: `critical observable(s) failed: ${criticalFailures.rows.map((r) => r.code).join(", ")}`,
+      reason: `critical-error criteria triggered: ${outcomes.triggeredCriticalErrorCodes.join(", ")}`,
     });
     return result;
   }
@@ -165,22 +207,27 @@ export async function propagateFromObservation(
   for (const rule of rules.rows) {
     const targetCode = String(rule.target_code);
 
-    // §14.4b: required observables must have been elicited and successful.
-    const requiredCodes = (rule.required_observable_codes ?? []) as string[];
-    if (requiredCodes.length > 0) {
-      const successful = await db.execute(sql`
-        SELECT observable_code FROM evidence.observable_result
-        WHERE evidence_observation_id = ${observationId} AND result = 'successful'
-      `);
-      const successfulCodes = new Set(successful.rows.map((r) => String(r.observable_code)));
-      const missing = requiredCodes.filter((code) => !successfulCodes.has(code));
-      if (missing.length > 0) {
-        result.skipped.push({
-          targetObjectiveCode: targetCode,
-          reason: `required observables not satisfied: ${missing.join(", ")}`,
-        });
-        continue;
-      }
+    // Required criteria are resolved from the rule, not from task-local
+    // observable names. The gate demands POSITIVE establishment: it is not
+    // enough that nothing failed — an attempt with no mapped observables at
+    // all must not propagate.
+    const requiredCriteria = await db.execute(sql`
+      SELECT c.id, c.code
+      FROM catalog.objective_evidence_implication_criterion ic
+      JOIN catalog.objective_criterion c ON c.id = ic.objective_criterion_id
+      WHERE ic.implication_id = ${rule.id}
+    `);
+
+    const unestablished = requiredCriteria.rows
+      .filter((row) => !outcomes.established.has(String(row.id)))
+      .map((row) => String(row.code));
+
+    if (unestablished.length > 0) {
+      result.skipped.push({
+        targetObjectiveCode: targetCode,
+        reason: `required criteria not established: ${unestablished.join(", ")}`,
+      });
+      continue;
     }
 
     // §14 uniqueness: one proxy per source evidence + target objective + rule.
@@ -214,7 +261,7 @@ export async function propagateFromObservation(
           implicationType: rule.implication_type,
           implicationId: rule.id,
           maximumTargetState: rule.maximum_target_state,
-          requiredObservableCodes: requiredCodes,
+          requiredCriterionCodes: requiredCriteria.rows.map((row) => String(row.code)),
         },
       })
       .returning({ id: s.observation.id });
