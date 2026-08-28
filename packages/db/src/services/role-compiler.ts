@@ -18,7 +18,8 @@ export interface ObjectivePolicy {
   directEvidenceRequired?: boolean;
   proxyEvidenceAllowed?: boolean;
   minimumIndependence?: 0 | 1 | 2 | 3 | 4;
-  minimumTransfer?: (typeof s.transferLevelEnum.enumValues)[number];
+  minimumTransferDistance?: (typeof s.transferDistanceEnum.enumValues)[number];
+  minimumPerformanceScope?: (typeof s.performanceScopeEnum.enumValues)[number];
 }
 
 export type RequirementMemberSpec =
@@ -195,7 +196,8 @@ export class RoleCompiler {
         directEvidenceRequired: policy.directEvidenceRequired ?? false,
         proxyEvidenceAllowed: policy.proxyEvidenceAllowed ?? true,
         minimumIndependence: policy.minimumIndependence ?? 3,
-        minimumTransfer: policy.minimumTransfer ?? "near",
+        minimumTransferDistance: policy.minimumTransferDistance ?? "near",
+        minimumPerformanceScope: policy.minimumPerformanceScope ?? "focused",
       };
 
       await this.db.insert(s.objectiveRequirement).values({
@@ -205,7 +207,8 @@ export class RoleCompiler {
         directEvidenceRequired: fullPolicy.directEvidenceRequired,
         proxyEvidenceAllowed: fullPolicy.proxyEvidenceAllowed,
         minimumIndependence: fullPolicy.minimumIndependence,
-        minimumTransfer: fullPolicy.minimumTransfer,
+        minimumTransferDistance: fullPolicy.minimumTransferDistance,
+        minimumPerformanceScope: fullPolicy.minimumPerformanceScope,
       });
 
       nodeRequirements.push({

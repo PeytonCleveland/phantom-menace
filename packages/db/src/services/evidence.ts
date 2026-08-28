@@ -27,7 +27,8 @@ export interface RecordObservationInput {
   result: "successful" | "partial" | "unsuccessful";
   evidenceStrength: "direct" | "supporting" | "incidental";
   independenceLevel: 0 | 1 | 2 | 3 | 4;
-  transferLevel: "same" | "near" | "far" | "integrated";
+  transferDistance: "same" | "near" | "far";
+  performanceScope: "focused" | "composite" | "integrated";
   rubricScore?: number;
   machineVerified?: boolean;
   humanVerified?: boolean;
@@ -53,7 +54,8 @@ export async function recordObservation(
         evidenceStrength: input.evidenceStrength,
         origin: "direct",
         independenceLevel: input.independenceLevel,
-        transferLevel: input.transferLevel,
+        transferDistance: input.transferDistance,
+        performanceScope: input.performanceScope,
         rubricScore: input.rubricScore?.toString(),
         machineVerified: input.machineVerified ?? false,
         humanVerified: input.humanVerified ?? false,
@@ -306,7 +308,8 @@ export async function propagateFromObservation(
         evidenceStrength: rule.derived_evidence_strength as "direct" | "supporting" | "incidental",
         origin: "proxy",
         independenceLevel: Number(observation.independence_level),
-        transferLevel: observation.transfer_level as "same" | "near" | "far" | "integrated",
+        transferDistance: observation.transfer_distance as "same" | "near" | "far",
+        performanceScope: observation.performance_scope as "focused" | "composite" | "integrated",
         machineVerified: Boolean(observation.machine_verified),
         humanVerified: false,
         sourceEvidenceId: observationId,

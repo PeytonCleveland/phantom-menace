@@ -54,7 +54,8 @@ export async function createTask(
           taskRevisionId: revision.id,
           code: variant.code,
           variantConfig: variant.variantConfig,
-          noveltyDefault: variant.noveltyDefault,
+          transferDistanceDefault: variant.transferDistanceDefault,
+          performanceScopeDefault: variant.performanceScopeDefault,
         })
         .returning({ id: s.taskVariant.id });
       if (!created) throw new Error(`failed to insert variant ${variant.code}`);
@@ -103,7 +104,8 @@ export async function createTask(
           claimRole: spec.claimRole,
           evidenceStrength: spec.evidenceStrength,
           minimumIndependence: spec.minimumIndependence,
-          minimumTransfer: spec.minimumTransfer,
+          minimumTransferDistance: spec.minimumTransferDistance,
+          minimumPerformanceScope: spec.minimumPerformanceScope,
           proxyPropagationAllowed: spec.proxyPropagationAllowed ?? true,
         })
         .returning({ id: s.taskObjectiveEvidenceSpec.id });

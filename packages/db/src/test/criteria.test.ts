@@ -69,7 +69,8 @@ test("propagation fails when a required criterion has no successful observable",
     result: "successful",
     evidenceStrength: "direct",
     independenceLevel: 3,
-    transferLevel: "near",
+    transferDistance: "near",
+    performanceScope: "focused",
     // Deliberately NO observable results: nothing is established.
     observableResults: [],
   });
@@ -89,7 +90,8 @@ test("propagation fails when a critical-error criterion is triggered", async () 
     result: "successful",
     evidenceStrength: "direct",
     independenceLevel: 3,
-    transferLevel: "near",
+    transferDistance: "near",
+    performanceScope: "focused",
     observableResults: [
       { code: "buffer-preservation", result: "successful" },
       { code: "multiple-frames", result: "successful" },
@@ -117,7 +119,8 @@ test("a criterion is not established when one of its mapped observables failed",
     result: "successful",
     evidenceStrength: "direct",
     independenceLevel: 3,
-    transferLevel: "near",
+    transferDistance: "near",
+    performanceScope: "focused",
     observableResults: [
       { code: "buffer-preservation", result: "successful" },
       { code: "multiple-frames", result: "successful" },
@@ -145,7 +148,8 @@ test("a critical-error criterion that was never measured blocks propagation", as
     result: "successful",
     evidenceStrength: "direct",
     independenceLevel: 3,
-    transferLevel: "near",
+    transferDistance: "near",
+    performanceScope: "focused",
     observableResults: [
       { code: "buffer-preservation", result: "successful" },
       { code: "multiple-frames", result: "successful" },
@@ -191,7 +195,8 @@ test("a fully_subsumes rule with no required criteria refuses to propagate", asy
       result: "successful",
       evidenceStrength: "direct",
       independenceLevel: 3,
-      transferLevel: "near",
+      transferDistance: "near",
+      performanceScope: "focused",
       // Only measure the critical-error criterion (as successful, so it
       // doesn't block globally) and nothing else: the point is that a
       // fully_subsumes rule with zero required criteria must refuse

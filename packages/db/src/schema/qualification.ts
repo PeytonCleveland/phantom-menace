@@ -19,10 +19,11 @@ import { capabilitySetRevision, frameworkRelease, learningObjectiveRevision } fr
 import { contextDimension, contextValue } from "./context";
 import {
   observationResultEnum,
+  performanceScopeEnum,
   publicationStatusEnum,
   qualificationSchema,
   requirementOperatorEnum,
-  transferLevelEnum,
+  transferDistanceEnum,
 } from "./enums";
 import { profile } from "./learner";
 
@@ -120,7 +121,8 @@ export const objectiveRequirement = qualificationSchema.table(
     directEvidenceRequired: boolean("direct_evidence_required").notNull().default(false),
     proxyEvidenceAllowed: boolean("proxy_evidence_allowed").notNull().default(true),
     minimumIndependence: smallint("minimum_independence"),
-    minimumTransfer: transferLevelEnum("minimum_transfer"),
+    minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance"),
+    minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope"),
     maximumEvidenceAge: interval("maximum_evidence_age"),
   },
   (t) => [

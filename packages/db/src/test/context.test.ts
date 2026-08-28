@@ -117,7 +117,8 @@ test("an objective with no required dimensions keys its assertion to the empty s
     result: "successful",
     evidenceStrength: "direct",
     independenceLevel: 4,
-    transferLevel: "near",
+    transferDistance: "near",
+    performanceScope: "focused",
   });
   const outcomes = await recalculateForObservations(db, [observationId]);
 

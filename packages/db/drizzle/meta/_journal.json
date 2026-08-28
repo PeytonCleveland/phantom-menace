@@ -50,6 +50,13 @@
       "when": 1787955658020,
       "tag": "0006_evidence_semantics_contract",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787956231867,
+      "tag": "0007_transfer_distance_performance_scope",
+      "breakpoints": true
     }
   ]
 }

@@ -20,8 +20,9 @@ import {
   assessmentSchema,
   claimRoleEnum,
   evidenceStrengthEnum,
+  performanceScopeEnum,
   taskKindEnum,
-  transferLevelEnum,
+  transferDistanceEnum,
 } from "./enums";
 import { profile } from "./learner";
 
@@ -121,7 +122,12 @@ export const taskVariant = assessmentSchema.table(
       .references(() => taskRevision.id),
     code: text("code").notNull(),
     variantConfig: jsonb("variant_config").notNull().default(sql`'{}'::jsonb`),
-    noveltyDefault: transferLevelEnum("novelty_default").notNull().default("same"),
+    transferDistanceDefault: transferDistanceEnum("transfer_distance_default")
+      .notNull()
+      .default("same"),
+    performanceScopeDefault: performanceScopeEnum("performance_scope_default")
+      .notNull()
+      .default("focused"),
     active: boolean("active").notNull().default(true),
   },
   (t) => [unique("uq_task_variant_code").on(t.taskRevisionId, t.code)],
@@ -156,7 +162,12 @@ export const taskObjectiveEvidenceSpec = assessmentSchema.table(
     claimRole: claimRoleEnum("claim_role").notNull(),
     evidenceStrength: evidenceStrengthEnum("evidence_strength").notNull(),
     minimumIndependence: smallint("minimum_independence").notNull(),
-    minimumTransfer: transferLevelEnum("minimum_transfer").notNull(),
+    minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance")
+      .notNull()
+      .default("same"),
+    minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope")
+      .notNull()
+      .default("focused"),
     rubricRevisionId: uuid("rubric_revision_id").references(() => rubricRevision.id),
     proxyPropagationAllowed: boolean("proxy_propagation_allowed").notNull().default(true),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),

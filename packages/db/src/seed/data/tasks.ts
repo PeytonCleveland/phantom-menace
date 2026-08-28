@@ -18,7 +18,8 @@ export interface EvidenceSpecSeed {
   claimRole: "primary" | "supporting" | "incidental";
   evidenceStrength: "direct" | "supporting" | "incidental";
   minimumIndependence: 0 | 1 | 2 | 3 | 4;
-  minimumTransfer: "same" | "near" | "far" | "integrated";
+  minimumTransferDistance: "same" | "near" | "far";
+  minimumPerformanceScope: "focused" | "composite" | "integrated";
   proxyPropagationAllowed?: boolean;
   observables?: ObservableSeed[];
 }
@@ -33,7 +34,8 @@ export interface TaskSeed {
   estimatedMinutes: number;
   variants: Array<{
     code: string;
-    noveltyDefault: "same" | "near" | "far" | "integrated";
+    transferDistanceDefault: "same" | "near" | "far";
+    performanceScopeDefault: "focused" | "composite" | "integrated";
     variantConfig: Record<string, unknown>;
   }>;
   evidenceSpecs: EvidenceSpecSeed[];
@@ -58,12 +60,14 @@ export const rustFramingChallenge: TaskSeed = {
   variants: [
     {
       code: "baseline",
-      noveltyDefault: "near",
+      transferDistanceDefault: "near",
+      performanceScopeDefault: "focused",
       variantConfig: { repository: "framing-service-a", faultProfile: "one-read-one-message" },
     },
     {
       code: "variant-split-header",
-      noveltyDefault: "near",
+      transferDistanceDefault: "near",
+      performanceScopeDefault: "composite",
       variantConfig: { repository: "framing-service-b", faultProfile: "header-split-discard" },
     },
   ],
@@ -73,7 +77,8 @@ export const rustFramingChallenge: TaskSeed = {
       claimRole: "primary",
       evidenceStrength: "direct",
       minimumIndependence: 3,
-      minimumTransfer: "near",
+      minimumTransferDistance: "near",
+      minimumPerformanceScope: "focused",
       proxyPropagationAllowed: true,
       observables: [
         {
@@ -137,21 +142,24 @@ export const rustFramingChallenge: TaskSeed = {
       claimRole: "supporting",
       evidenceStrength: "supporting",
       minimumIndependence: 3,
-      minimumTransfer: "near",
+      minimumTransferDistance: "near",
+      minimumPerformanceScope: "focused",
     },
     {
       objectiveCode: "RUST-NET-L2-004",
       claimRole: "supporting",
       evidenceStrength: "supporting",
       minimumIndependence: 3,
-      minimumTransfer: "near",
+      minimumTransferDistance: "near",
+      minimumPerformanceScope: "focused",
     },
     {
       objectiveCode: "NET-TCP-L1-003",
       claimRole: "supporting",
       evidenceStrength: "supporting",
       minimumIndependence: 3,
-      minimumTransfer: "near",
+      minimumTransferDistance: "near",
+      minimumPerformanceScope: "focused",
     },
   ],
   administrations: [
@@ -176,7 +184,8 @@ export const rustFramingChallenge: TaskSeed = {
         unfamiliarRepository: true,
         hiddenBoundaryTests: true,
         minimumIndependence: 3,
-        minimumTransfer: "near",
+        minimumTransferDistance: "near",
+        minimumPerformanceScope: "focused",
       },
       processCaptureEnabled: true,
     },

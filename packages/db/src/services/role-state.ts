@@ -1,7 +1,12 @@
 import { sql } from "drizzle-orm";
 import type { Database } from "../client";
 import * as s from "../schema/index";
-import { type TransferLevel, transferAtLeast } from "./policy";
+import {
+  type PerformanceScope,
+  performanceScopeAtLeast,
+  type TransferDistance,
+  transferDistanceAtLeast,
+} from "./policy";
 
 /**
  * Role satisfaction evaluation (spec §15.5).
@@ -50,7 +55,8 @@ export interface EvidencePolicyCheck {
   directEvidenceRequired: boolean;
   proxyEvidenceAllowed: boolean;
   minimumIndependence: number | null;
-  minimumTransfer: TransferLevel | null;
+  minimumTransferDistance: TransferDistance | null;
+  minimumPerformanceScope: PerformanceScope | null;
   maximumEvidenceAge: string | null;
   contexts: RequirementContextCheck[];
 }
@@ -156,7 +162,7 @@ export async function checkObjectiveSatisfaction(
   }
 
   const observations = await db.execute(sql`
-    SELECT origin, independence_level, transfer_level, observed_at
+    SELECT origin, independence_level, transfer_distance, performance_scope, observed_at
     FROM evidence.observation
     WHERE learner_id = ${learnerId}
       AND objective_revision_id = ${objectiveRevisionId}
@@ -180,8 +186,20 @@ export async function checkObjectiveSatisfaction(
       continue;
     }
     if (
-      policy.minimumTransfer !== null &&
-      !transferAtLeast(String(row.transfer_level) as TransferLevel, policy.minimumTransfer)
+      policy.minimumTransferDistance !== null &&
+      !transferDistanceAtLeast(
+        String(row.transfer_distance) as TransferDistance,
+        policy.minimumTransferDistance,
+      )
+    ) {
+      continue;
+    }
+    if (
+      policy.minimumPerformanceScope !== null &&
+      !performanceScopeAtLeast(
+        String(row.performance_scope) as PerformanceScope,
+        policy.minimumPerformanceScope,
+      )
     ) {
       continue;
     }
@@ -212,7 +230,8 @@ export async function evaluateRoleState(
   const requirementsResult = await db.execute(sql`
     SELECT oreq.id, oreq.requirement_group_id, oreq.objective_revision_id,
            oreq.direct_evidence_required, oreq.proxy_evidence_allowed,
-           oreq.minimum_independence, oreq.minimum_transfer, oreq.maximum_evidence_age,
+           oreq.minimum_independence, oreq.minimum_transfer_distance, oreq.minimum_performance_scope,
+           oreq.maximum_evidence_age,
            lo.canonical_code
     FROM qualification.objective_requirement oreq
     JOIN catalog.learning_objective_revision lor ON lor.id = oreq.objective_revision_id
@@ -259,7 +278,8 @@ export async function evaluateRoleState(
         proxyEvidenceAllowed: Boolean(row.proxy_evidence_allowed),
         minimumIndependence:
           row.minimum_independence === null ? null : Number(row.minimum_independence),
-        minimumTransfer: (row.minimum_transfer as TransferLevel | null) ?? null,
+        minimumTransferDistance: (row.minimum_transfer_distance as TransferDistance | null) ?? null,
+        minimumPerformanceScope: (row.minimum_performance_scope as PerformanceScope | null) ?? null,
         maximumEvidenceAge: row.maximum_evidence_age ? String(row.maximum_evidence_age) : null,
         contexts: contextsByRequirement.get(String(row.id)) ?? [],
       },

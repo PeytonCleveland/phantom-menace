@@ -123,7 +123,7 @@ export const softwareEngineerL3Composition: RequirementGroupSpec[] = [
               directEvidenceRequired: true,
               proxyEvidenceAllowed: false,
               minimumIndependence: 3,
-              minimumTransfer: "near",
+              minimumTransferDistance: "near",
             },
           },
           { kind: "objective", objectiveCode: "RUST-NET-L3-003" },
@@ -148,7 +148,7 @@ export const softwareEngineerL3Composition: RequirementGroupSpec[] = [
           {
             kind: "capability_set",
             setCode: "cs.swe-networking-support",
-            policy: { minimumIndependence: 2, minimumTransfer: "same" },
+            policy: { minimumIndependence: 2, minimumTransferDistance: "same" },
           },
         ],
       },

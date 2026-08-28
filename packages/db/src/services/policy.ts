@@ -38,12 +38,24 @@ export const inferencePolicy = {
   contradictedConfidence: 0.1,
 } as const;
 
-export const transferOrder = { same: 0, near: 1, far: 2, integrated: 3 } as const;
+export const transferDistanceOrder = { same: 0, near: 1, far: 2 } as const;
+export const performanceScopeOrder = { focused: 0, composite: 1, integrated: 2 } as const;
 
-export type TransferLevel = keyof typeof transferOrder;
+export type TransferDistance = keyof typeof transferDistanceOrder;
+export type PerformanceScope = keyof typeof performanceScopeOrder;
 
-export function transferAtLeast(actual: TransferLevel, minimum: TransferLevel): boolean {
-  return transferOrder[actual] >= transferOrder[minimum];
+export function transferDistanceAtLeast(
+  actual: TransferDistance,
+  minimum: TransferDistance,
+): boolean {
+  return transferDistanceOrder[actual] >= transferDistanceOrder[minimum];
+}
+
+export function performanceScopeAtLeast(
+  actual: PerformanceScope,
+  minimum: PerformanceScope,
+): boolean {
+  return performanceScopeOrder[actual] >= performanceScopeOrder[minimum];
 }
 
 export const frontierPolicy = {

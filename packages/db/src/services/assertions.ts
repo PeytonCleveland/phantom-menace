@@ -23,7 +23,7 @@ interface ObservationRow {
   evidence_strength: string;
   origin: string;
   independence_level: number;
-  transfer_level: string;
+  transfer_distance: string;
   machine_verified: boolean;
   human_verified: boolean;
   observed_at: string;
@@ -62,7 +62,7 @@ export async function recalculateAssertionsForObjective(
 
   const observationsResult = await db.execute(sql`
     SELECT o.id, o.result, o.evidence_strength, o.origin, o.independence_level,
-           o.transfer_level, o.machine_verified, o.human_verified, o.observed_at, o.details,
+           o.transfer_distance, o.machine_verified, o.human_verified, o.observed_at, o.details,
            coalesce(
              (SELECT jsonb_object_agg(oc.dimension_code, cv.code)
               FROM evidence.observation_context oc
@@ -201,7 +201,7 @@ function inferState(observations: ObservationRow[]): {
     if (best.human_verified) confidence += inferencePolicy.bonusHumanVerified;
     if (Number(best.independence_level) >= 3)
       confidence += inferencePolicy.bonusIndependenceAtLeast3;
-    if (best.transfer_level !== "same") confidence += inferencePolicy.bonusTransferNearOrBetter;
+    if (best.transfer_distance !== "same") confidence += inferencePolicy.bonusTransferNearOrBetter;
     if (best.origin === "proxy") confidence -= inferencePolicy.proxyPenalty;
     return {
       state: "demonstrated",
