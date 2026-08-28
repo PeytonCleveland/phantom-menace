@@ -39,6 +39,7 @@
 
 ## Task Dependency Notes
 
+- **Task 14 must run immediately before Task 11.** It is at the end of the file for numbering reasons only.
 - **Task 3 must precede Task 10.** Task 3 is a safe refactor *only* because no seeded objective declares a required context dimension yet, so every assertion keys to `''` and behavior is unchanged. Task 10 seeds the first required dimensions. Reversing them turns Task 3 into an untested semantics change.
 - **Task 6 (seed criteria) must precede Task 7 (drops).**
 - **Task 11 (immutability) must come last among schema tasks** — it freezes rows that earlier tasks still need to write.
@@ -2494,6 +2495,97 @@ Expected: green. **The compiled hash changes** — requirements now carry assura
 ```bash
 git add packages/db
 git commit -m "feat: split advisory objective assurance from governing requirement assurance"
+```
+
+---
+
+## Task 14: Context correctness hardening
+
+**Run this immediately BEFORE Task 11.** Added after the Task 3 review, which found four
+correctness gaps that are dormant only because nothing declares a required context
+dimension yet. Task 11 is what makes contexts live, so every one of these fires there.
+
+**Files:**
+- Modify: `packages/db/src/services/projections.ts`, `packages/db/src/services/role-state.ts`, `packages/db/src/services/assertions.ts`, `packages/db/src/schema/context.ts`, `packages/db/src/schema/evidence.ts`, `packages/db/src/schema/assertions.ts`, `packages/db/src/schema/assessment.ts`
+
+**Interfaces:**
+- Produces: `RecalculationDiagnostics { skippedIncompleteContext: number }` returned alongside assertion outcomes.
+
+- [ ] **Step 1: Make the frontier context-aware**
+
+`computeFrontier` assumes one assertion row per `(learner, objective)`. Both the `states`
+CTE (`projections.ts:80-83`) and the `ps` LEFT JOIN (`:97-100`) key on
+`(learner_id, objective_revision_id)` with no context predicate, so the moment an objective
+carries two context-scoped assertions the frontier emits duplicate candidates and multiplies
+the `hard_prerequisites` JSON entries.
+
+For frontier purposes an objective counts as reached if ANY context is demonstrated —
+the frontier answers "what should I learn next", not "what am I qualified for". Collapse
+both to one row per objective by state precedence:
+
+```sql
+    states AS (
+      SELECT DISTINCT ON (objective_revision_id) objective_revision_id, state
+      FROM learner.objective_assertion
+      WHERE learner_id = ${learnerId}
+      ORDER BY objective_revision_id,
+        CASE state
+          WHEN 'demonstrated' THEN 0 WHEN 'developing' THEN 1 WHEN 'stale' THEN 2
+          WHEN 'contradicted' THEN 3 ELSE 4
+        END
+    )
+```
+
+Apply the same `DISTINCT ON` collapse to the `ps` prerequisite join. Add a test asserting
+that an objective with two context-scoped assertions yields exactly one frontier entry.
+
+- [ ] **Step 2: Make the observation scan context-aware**
+
+`role-state.ts` gates the closure only on whether a demonstrated assertion exists in
+context; it then evaluates `via`, `minimumIndependence`, `minimumTransfer` and
+`maximumEvidenceAge` against `evidence.observation` with NO context filter. So a weak
+in-context assertion plus a strong OUT-of-context observation passes the policy gate on
+evidence from the wrong context — which defeats context scoping for the quality half of
+the check.
+
+Filter the observation scan through the same `pinned` closure: an observation qualifies
+only when, for every pinned dimension, it carries an `observation_context` row whose value
+is in the closure. Reuse the CTE rather than duplicating the recursion.
+
+- [ ] **Step 3: Scope breadth counting to the requirement's other pins**
+
+The `minimumDistinctValues` count runs across all demonstrated assertions for the
+objective, so a requirement pinning `cloud_provider=aws` and demanding breadth >= 2 on
+`deployment_env` counts `deployment_env` values from assertions that fail the `aws` pin.
+Restrict the distinct count to assertions that also satisfy every pinned dimension.
+
+- [ ] **Step 4: Make skipped-for-incomplete-context observations visible**
+
+When an objective newly declares a required dimension, observations lacking it produce no
+assertion and the old assertion disappears with no error. **The disappearance is correct** —
+spec §1 requires exactly this, since such evidence genuinely cannot establish a scoped
+claim — but it must not be silent. Have `recalculateAssertionsForObjective` count the
+observations it skipped for incomplete context and return that alongside the outcomes, and
+have the demo print it. Do NOT add a backfill or a default-context fallback: inventing a
+context for evidence that never carried one is precisely the overclaiming this pass exists
+to prevent.
+
+- [ ] **Step 5: Close the dimension/value mismatch**
+
+`objective_assertion_context`, `observation_context` and `task_variant_context` each carry
+independent FKs to `context_dimension.code` and `context_value.id`, with nothing forcing
+the value to belong to the named dimension. A row claiming dimension `cloud_provider` with
+an `azure_region` value id is representable today. Add a unique constraint on
+`context_value (id, dimension_code)` and make all three tables use a composite FK to it.
+
+- [ ] **Step 6: Verify and commit**
+
+Run `pnpm --filter @lighthouse/db db:generate && pnpm db:reset && pnpm --filter @lighthouse/db test && pnpm lint && pnpm check-types && pnpm --filter @lighthouse/db db:demo`.
+The demo's load-bearing lines must be unchanged.
+
+```bash
+git add packages/db
+git commit -m "fix: make frontier, evidence scan, and breadth counting context-aware"
 ```
 
 ---
