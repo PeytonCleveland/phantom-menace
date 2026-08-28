@@ -3309,6 +3309,11 @@ The baseline lives in the session scratchpad; if lost, regenerate it from `git s
 2. `gated by observables:` becomes `gated by criteria:` with criterion codes.
 3. The new `§1 Context` section with its four-row PASS/FAIL matrix.
 4. Frontier counts shift by the number of new cloud objectives.
+5. **Ordering inside `hard_prerequisites` and the frontier blocked list.** The underlying
+   `json_agg` in `projections.ts` has no `ORDER BY`, so ordering is query-plan dependent and
+   varies run to run. Pre-existing, unrelated to this pass. Compare these as SETS, not
+   sequences — and note the baseline file itself predates the criteria rewrite, so its
+   `gated by observables:` line is expected to read `gated by criteria:` now.
 
 **Any other change is a regression.** In particular these must be byte-identical:
 - `1 proxy observation(s) created`
