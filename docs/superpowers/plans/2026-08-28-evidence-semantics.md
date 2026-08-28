@@ -1653,6 +1653,17 @@ In `packages/db/src/seed/data/objectives.ts`, add to the `RUST-NET-L3-001` objec
     ],
 ```
 
+**Why RUST-NET-L3-001 gets one critical-error criterion and not four.** Its original
+`criticalErrors` list has four entries, but three of them are the logical negations of
+success criteria already in the list above: "assumes one read equals one message" negates
+`multiple-frames-per-read`, "discards incomplete frame bytes" negates
+`preserve-incomplete-data`, and "declares success without verification" negates
+`boundary-verification`. Only "silently loses or duplicates bytes" is an independent
+disqualifying condition, and that is exactly `no-data-loss`. Informal prose stated the same
+proposition twice, once positively and once negatively; structuring criteria de-duplicates
+it. Do not re-expand these into four critical errors — you would be authoring the same
+claim twice and gating on it twice.
+
 - [ ] **Step 2: Convert RUST-NET-L2-003**
 
 Its `criticalErrors` are `["assumes one read returns one complete message", "discards bytes from an incomplete unit"]`. Add:
