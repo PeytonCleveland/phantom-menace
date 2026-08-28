@@ -1,5 +1,5 @@
 {
-  "id": "5524e676-d1db-49f8-815e-02391b24f73d",
+  "id": "7d1e0c08-bf0f-4545-9bac-c0ee446478a8",
   "prevId": "7efef10c-3a93-493b-ad2c-9923d0b9feeb",
   "version": "7",
   "dialect": "postgresql",
@@ -3627,7 +3627,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
+      "checkConstraints": {
+        "ck_context_dimension_code_format": {
+          "name": "ck_context_dimension_code_format",
+          "value": "code !~ E'[\\x3B=]'"
+        }
+      },
       "isRLSEnabled": false
     },
     "catalog.context_value": {
@@ -3727,6 +3732,10 @@
         "ck_context_value_no_self_parent": {
           "name": "ck_context_value_no_self_parent",
           "value": "parent_value_id IS NULL OR parent_value_id <> id"
+        },
+        "ck_context_value_code_format": {
+          "name": "ck_context_value_code_format",
+          "value": "code !~ E'[\\x3B=]'"
         }
       },
       "isRLSEnabled": false

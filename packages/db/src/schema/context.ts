@@ -23,13 +23,25 @@ import { catalogSchema } from "./enums";
 // principle produces wrong qualification decisions.
 // ---------------------------------------------------------------------------
 
-export const contextDimension = catalogSchema.table("context_dimension", {
-  code: text("code").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description").notNull().default(""),
-  active: boolean("active").notNull().default(true),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+// A code containing `;` or `=` would make a canonical context key ambiguous
+// to parse back apart, corrupting assertion identity. Both code columns
+// reject those two characters. The semicolon is written as the hex escape
+// \x3B (in an E'' extended string) rather than a literal `;` because
+// drizzle-kit's migration generator mis-splits raw SQL check text on `;`
+// even inside a quoted string literal, corrupting the generated migration.
+const CODE_FORMAT_CHECK = sql`code !~ E'[\\x3B=]'`;
+
+export const contextDimension = catalogSchema.table(
+  "context_dimension",
+  {
+    code: text("code").primaryKey(),
+    name: text("name").notNull(),
+    description: text("description").notNull().default(""),
+    active: boolean("active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  () => [check("ck_context_dimension_code_format", CODE_FORMAT_CHECK)],
+);
 
 export const contextValue = catalogSchema.table(
   "context_value",
@@ -47,5 +59,6 @@ export const contextValue = catalogSchema.table(
   (t) => [
     unique("uq_context_value_code").on(t.dimensionCode, t.code),
     check("ck_context_value_no_self_parent", sql`parent_value_id IS NULL OR parent_value_id <> id`),
+    check("ck_context_value_code_format", CODE_FORMAT_CHECK),
   ],
 );
