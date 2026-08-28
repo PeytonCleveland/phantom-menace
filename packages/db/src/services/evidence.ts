@@ -130,7 +130,13 @@ export async function summarizeCriterionOutcomes(
     WHERE r.evidence_observation_id = ${observationId}
   `);
 
-  const established = new Set<string>();
+  const succeeded = new Set<string>();
+  // Several independent observables may establish one criterion (an automated
+  // check, a second check, a human rubric item) — so one success is enough to
+  // establish it. But a mapped observable that FAILED is a measurement saying
+  // the criterion does not hold, and it cannot be outvoted by a sibling that
+  // passed. Establishment therefore requires a success and no failures.
+  const failed = new Set<string>();
   const observed = new Set<string>();
   const triggeredCriticalErrorCodes: string[] = [];
 
@@ -138,11 +144,16 @@ export async function summarizeCriterionOutcomes(
     const criterionId = String(row.id);
     observed.add(criterionId);
     if (row.result === "successful") {
-      established.add(criterionId);
-    } else if (row.kind === "critical_error") {
-      triggeredCriticalErrorCodes.push(String(row.code));
+      succeeded.add(criterionId);
+    } else {
+      failed.add(criterionId);
+      if (row.kind === "critical_error") {
+        triggeredCriticalErrorCodes.push(String(row.code));
+      }
     }
   }
+
+  const established = new Set([...succeeded].filter((id) => !failed.has(id)));
 
   return { established, observed, triggeredCriticalErrorCodes };
 }
@@ -193,6 +204,26 @@ export async function propagateFromObservation(
     return result;
   }
 
+  // A critical-error criterion that was never measured at all is not evidence
+  // it did not happen — "we did not check" cannot count as "it passed". A
+  // task whose observables don't cover a critical-error criterion of its own
+  // objective must not let that criterion's silence read as success, so
+  // missing measurement blocks propagation exactly like a triggered one.
+  const criticalErrorCriteria = await db.execute(sql`
+    SELECT id, code FROM catalog.objective_criterion
+    WHERE objective_revision_id = ${observation.objective_revision_id} AND kind = 'critical_error'
+  `);
+  const unmeasuredCriticalErrors = criticalErrorCriteria.rows
+    .filter((row) => !outcomes.observed.has(String(row.id)))
+    .map((row) => String(row.code));
+  if (unmeasuredCriticalErrors.length > 0) {
+    result.skipped.push({
+      targetObjectiveCode: "*",
+      reason: `critical-error criteria not measured: ${unmeasuredCriticalErrors.join(", ")}`,
+    });
+    return result;
+  }
+
   // §14.4a: approved automatic implication rules for this source objective.
   const rules = await db.execute(sql`
     SELECT i.*, tlo.canonical_code AS target_code
@@ -234,6 +265,12 @@ export async function propagateFromObservation(
       continue;
     }
 
+    // Deliberate narrowing from the old gate: a triggered or unmeasured
+    // critical-error criterion still blocks every rule from this evidence
+    // (checked above, before this loop), but an unestablished *required*
+    // criterion only invalidates the rules that actually depend on it — a
+    // rule this evidence doesn't speak to at all should not be penalized for
+    // a success criterion it never claimed.
     const unestablished = requiredCriteria.rows
       .filter((row) => !outcomes.established.has(String(row.id)))
       .map((row) => String(row.code));

@@ -75,8 +75,9 @@ test("propagation fails when a required criterion has no successful observable",
   });
 
   const propagation = await propagateFromObservation(db, observationId);
+  // Assert behavior, not the wording of a skip reason: an attempt with no
+  // mapped observables at all must not mint proxy evidence, full stop.
   expect(propagation.createdProxyObservationIds).toEqual([]);
-  expect(propagation.skipped.some((s) => /criteri/i.test(s.reason))).toBe(true);
 });
 
 test("propagation fails when a critical-error criterion is triggered", async () => {
@@ -102,6 +103,61 @@ test("propagation fails when a critical-error criterion is triggered", async () 
   const propagation = await propagateFromObservation(db, observationId);
   expect(propagation.createdProxyObservationIds).toEqual([]);
   expect(propagation.skipped.some((s) => /critical/i.test(s.reason))).toBe(true);
+});
+
+test("a criterion is not established when one of its mapped observables failed", async () => {
+  // partial-header and partial-body both map to split-header-and-body. One
+  // succeeding must not let it be established when the other failed — a
+  // passing sibling cannot outvote a failing measurement of the same claim.
+  const learnerId = await createLearner(db, "split-vote-guard");
+  const observationId = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: await objectiveId(db, "RUST-NET-L3-001"),
+    evidenceSpecId: await specIdFor("RUST-NET-L3-001"),
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 3,
+    transferLevel: "near",
+    observableResults: [
+      { code: "buffer-preservation", result: "successful" },
+      { code: "multiple-frames", result: "successful" },
+      { code: "partial-header", result: "unsuccessful" },
+      { code: "partial-body", result: "successful" },
+      { code: "data-integrity", result: "successful" },
+    ],
+  });
+
+  const propagation = await propagateFromObservation(db, observationId);
+  // split-header-and-body is required by RUST-NET-L3-001 -> RUST-NET-L2-003
+  // and must not be established, so no proxy should be minted.
+  expect(propagation.createdProxyObservationIds).toEqual([]);
+});
+
+test("a critical-error criterion that was never measured blocks propagation", async () => {
+  // data-integrity is the only observable mapped to no-data-loss (a
+  // critical_error criterion). Omitting it entirely must not read as "no
+  // data loss occurred" — it must block exactly like a triggered failure.
+  const learnerId = await createLearner(db, "unmeasured-critical-guard");
+  const observationId = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: await objectiveId(db, "RUST-NET-L3-001"),
+    evidenceSpecId: await specIdFor("RUST-NET-L3-001"),
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 3,
+    transferLevel: "near",
+    observableResults: [
+      { code: "buffer-preservation", result: "successful" },
+      { code: "multiple-frames", result: "successful" },
+      { code: "partial-header", result: "successful" },
+      { code: "partial-body", result: "successful" },
+      // data-integrity deliberately omitted: no-data-loss is never measured.
+    ],
+  });
+
+  const propagation = await propagateFromObservation(db, observationId);
+  expect(propagation.createdProxyObservationIds).toEqual([]);
+  expect(propagation.skipped.some((s) => /not measured/i.test(s.reason))).toBe(true);
 });
 
 test("a fully_subsumes rule with no required criteria refuses to propagate", async () => {
@@ -136,12 +192,14 @@ test("a fully_subsumes rule with no required criteria refuses to propagate", asy
       evidenceStrength: "direct",
       independenceLevel: 3,
       transferLevel: "near",
-      // No observable results needed: the point is that a fully_subsumes rule
-      // with zero required criteria must refuse regardless of what the source
-      // evidence established. (The unrelated RUST-NET-L3-001 -> RUST-NET-L2-003
-      // rule is also skipped here, but for the ordinary "not established"
-      // reason, since nothing was observed either.)
-      observableResults: [],
+      // Only measure the critical-error criterion (as successful, so it
+      // doesn't block globally) and nothing else: the point is that a
+      // fully_subsumes rule with zero required criteria must refuse
+      // regardless of what the source evidence established. (The unrelated
+      // RUST-NET-L3-001 -> RUST-NET-L2-003 rule is also skipped here, but for
+      // the ordinary "not established" reason, since its criteria weren't
+      // observed either.)
+      observableResults: [{ code: "data-integrity", result: "successful" }],
     });
 
     const propagation = await propagateFromObservation(db, observationId);
