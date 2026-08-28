@@ -65,6 +65,42 @@ test("the frontier collapses two context-scoped assertions into one entry", asyn
   expect(matches).toHaveLength(1);
 });
 
+test("the hard-prerequisite join does not multiply a context-scoped prerequisite", async () => {
+  // NET-TCP-L1-001 (used above) has no inbound hard prerequisite, so it only
+  // exercises the `states` CTE collapse. RUST-NET-L2-003 is a hard
+  // prerequisite of RUST-NET-L3-001 — giving IT two context-scoped
+  // assertions is what exercises the `ps` join's reuse of that same
+  // collapse. Without it, RUST-NET-L3-001's hard_prerequisites JSON would
+  // list RUST-NET-L2-003 twice (once per context-scoped assertion row).
+  const learnerId = await createLearner(db, "frontier-prereq-collapse");
+  const prereqObjectiveRevisionId = await objectiveId(db, "RUST-NET-L2-003");
+  const roleLevelRevisionId = await seRoleLevelRevisionId(db);
+
+  await db.insert(s.objectiveAssertion).values([
+    {
+      learnerId,
+      objectiveRevisionId: prereqObjectiveRevisionId,
+      contextKey: "cloud_provider=aws",
+      state: "developing",
+      confidence: "0.400",
+      inferenceModelVersion: "test-fixture",
+    },
+    {
+      learnerId,
+      objectiveRevisionId: prereqObjectiveRevisionId,
+      contextKey: "cloud_provider=azure",
+      state: "stale",
+      confidence: "0.300",
+      inferenceModelVersion: "test-fixture",
+    },
+  ]);
+
+  const frontier = await computeFrontier(db, learnerId, roleLevelRevisionId);
+  const blocked = frontier.blocked.filter((b) => b.canonicalCode === "RUST-NET-L3-001");
+  expect(blocked).toHaveLength(1);
+  expect([...(blocked[0]?.blockedBy ?? [])].sort()).toEqual(["NET-TCP-L1-003", "RUST-NET-L2-003"]);
+});
+
 test("the observation scan only considers evidence in the pinned context", async () => {
   // A weak IN-context assertion plus a strong OUT-of-context observation must
   // not pass the policy gate: context scoping has to apply to the quality
@@ -251,6 +287,11 @@ test("an observation missing a newly-required context dimension is skipped, visi
   await svc.createDimension({ code: dim, name: "Test Step 4 Dimension" });
   await svc.createValue({ dimensionCode: dim, code: "only_val", name: "Only" });
 
+  // Mutates shared catalog state (a required-dimension policy on the seeded
+  // RUST-NET-L4-002), not just this test's own learner. Safe only because
+  // vitest.config.ts sets fileParallelism: false, so no other test file can
+  // observe this objective mid-mutation; if that ever changes, this needs
+  // its own catalog fixture instead.
   const objectiveRevisionId = await objectiveId(db, "RUST-NET-L4-002");
   await db.insert(s.objectiveContextPolicy).values({
     objectiveRevisionId,
