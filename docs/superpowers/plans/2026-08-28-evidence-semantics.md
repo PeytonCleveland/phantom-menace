@@ -1719,6 +1719,19 @@ In `packages/db/src/seed/data/relationships.ts`, add to the `RUST-NET-L3-001 -> 
     ],
 ```
 
+**There is a SECOND `fully_subsumes` implication in this file and it must also be
+converted:** `RUST-NET-L4-001 -> RUST-NET-L3-003`, whose legacy gate is the single
+observable `framing-diagnosis`. Give it:
+
+```ts
+    requiredCriterionCodes: ["discriminates-async-mechanisms", "rules-out-competing-explanations"],
+```
+
+Missing this leaves an automatic `fully_subsumes` rule deriving `direct` strength capped at
+`demonstrated` with ZERO criteria — which after Task 6 propagates completely ungated and
+mints unearned qualifications. Every `fully_subsumes` implication in the seed must end this
+step with at least one required criterion; check them all, do not assume there are only two.
+
 Keep `requiredObservableCodes` for now — Task 6 switches the gate over, Task 7 drops the column.
 
 Note the equivalence being preserved: the old gate required `buffer-preservation`, `multiple-frames`, `partial-header`, `partial-body`, and `data-integrity` to succeed. The three criteria above cover the first four; `data-integrity` is now enforced by the `no-data-loss` critical-error gate, which applies to every rule automatically.
