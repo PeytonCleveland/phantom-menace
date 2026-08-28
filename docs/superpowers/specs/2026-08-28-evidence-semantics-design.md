@@ -99,27 +99,22 @@ catalog.objective_context_policy
     objective_revision_id  uuid -> learning_objective_revision.id
     dimension_code         text -> context_dimension.code
     policy                 enum (required | optional | not_applicable)
-    minimum_distinct_values integer not null default 1
     PRIMARY KEY (objective_revision_id, dimension_code)
-    CHECK (policy = 'required' OR minimum_distinct_values = 1)
 
 catalog.objective_context_allowed_value
     objective_revision_id, dimension_code, context_value_id
     -- optional whitelist; absence means any value of the dimension
 ```
 
-`minimum_distinct_values` is future-proofing bought cheaply now. It stays 1 for
-essentially every objective, but it leaves room for an L4 objective like *adapt a
-cloud architecture across providers* to declare `cloud_provider required,
-minimum_distinct_values = 2` without a later model replacement.
+The objective declares *which* dimensions scope the claim. It does not declare
+how much breadth a qualification demands — that lives on the role requirement,
+for the same reason assurance does (§5).
 
-It is **not** part of assertion identity. An assertion is always scoped to exactly
-one value tuple. `minimum_distinct_values` is evaluated at requirement
-satisfaction time, by counting distinct qualifying values across a learner's
-assertions for that objective. Write this down where the evaluator lives.
-
-Objective-level only in this pass; roles cannot tighten it (pinning a specific
-value and demanding two distinct values are contradictory asks).
+**Allowed values are inherited downward.** Permitting `aws` permits
+`aws_govcloud`, because the hierarchy already means child evidence is
+semantically valid for the parent. If exact commercial AWS ever matters, the
+answer is to author an `aws_commercial` leaf beside `aws_govcloud` and permit the
+leaf — not to special-case the whitelist.
 
 ### Evidence and delivery side
 
@@ -144,9 +139,38 @@ when recording, and is the authoring statement of what a variant exercises.
 qualification.objective_requirement_context
     objective_requirement_id  uuid -> objective_requirement.id
     dimension_code            text
-    context_value_id          uuid -> context_value.id
+    context_value_id          uuid -> context_value.id   (nullable)
+    minimum_distinct_values   integer not null default 1
     PRIMARY KEY (objective_requirement_id, dimension_code)
+    CHECK (context_value_id IS NULL OR minimum_distinct_values = 1)
+    CHECK (minimum_distinct_values >= 1)
 ```
+
+One row expresses either of the two things a qualification can demand of a
+dimension:
+
+```
+pin        context_value_id = aws,  minimum_distinct_values = 1
+           -> evidence in aws or any descendant
+
+breadth    context_value_id = NULL, minimum_distinct_values = 2
+           -> evidence in at least two distinct values of the dimension
+```
+
+Pinning a value *and* demanding breadth is contradictory, hence the check.
+Breadth is counted over distinct qualifying assertions for that objective — an
+assertion is always scoped to exactly one value tuple, and that never changes.
+
+Breadth belongs here rather than on the objective for two reasons. It follows the
+principle already established for assurance: the objective defines the capability,
+the qualification decides how much evidence it demands. And an objective-level
+`minimum_distinct_values` would have been unexercisable anyway — `observation_context`
+is keyed `(observation_id, dimension_code)`, so a single observation cannot carry
+both `aws` and `azure`. Multi-context observations are not solved in this pass.
+
+A genuine capability like *adapt an architecture across cloud providers* should
+eventually be its own higher-order objective whose assessment explicitly measures
+transfer, not a count encoded on a lower objective.
 
 ### The required-dimensions-only rule
 
@@ -262,11 +286,17 @@ catalog.objective_criterion
     code                   text
     statement              text
     kind                   enum (success | quality | verification | process | critical_error)
-    severity               enum (limiting | blocking)   nullable
     sort_order             integer
     UNIQUE (objective_revision_id, code)
-    CHECK (kind = 'critical_error') = (severity IS NOT NULL)
 ```
+
+**No `severity` column.** A `critical_error` criterion is blocking by definition.
+Shipping a `limiting` value that looks consequential and is ignored by the
+evaluator is worse than not having it — the same objection that kills
+`transitive` in §6, and it applies here for the same reason. When `limiting`
+acquires real semantics (cap the establishable level? require human review?
+reduce confidence?) it arrives as a migration, and we decide what it means then
+rather than guessing now.
 
 `code` is **stable within the objective's lineage**, not just within the revision.
 That is what later lets `objective_revision_transition` say "criteria unchanged →
@@ -294,13 +324,11 @@ The negative conditions are frequently the more consequential half. For
 preserve-incomplete-data      kind = success
 arbitrary-read-boundaries     kind = success
 handles-eof                   kind = success
-no-data-loss                  kind = critical_error   severity = blocking
+no-data-loss                  kind = critical_error
 ```
 
 A learner who satisfies all three success criteria but loses bytes under one
-condition must not establish the capability. `severity = blocking` disqualifies;
-`limiting` caps rather than disqualifies (reserved — no evaluator behavior beyond
-disqualification in this pass, but the distinction is authorable).
+condition must not establish the capability.
 
 ### Observable ↔ criterion is many-to-many
 
@@ -317,9 +345,40 @@ not lose data*; and one criterion can be established by several independent
 observables — an automated check, a second automated check, and a human rubric
 item.
 
-When an evidence spec's `evidence_strength` is `direct`, every non-`critical_error`
-criterion of the objective that spec targets must be reachable through this
-mapping. Validated at publication.
+### What `direct` means, and what it therefore owes
+
+`evidence_strength = 'direct'` on an evidence spec does **not** merely mean "not
+proxy". It means **claim-complete**: this task, on its own, can establish the
+whole capability claim. `supporting` means the task contributes evidence toward
+the claim without being sufficient for it.
+
+That definition is what makes the coverage rule sensible rather than arbitrary:
+
+> When a spec's `evidence_strength` is `direct`, **every** criterion of the
+> objective it targets must be reachable through the mapping — the
+> non-`critical_error` criteria *and* every `critical_error` criterion.
+
+Covering only the positive criteria would permit a task that claims complete
+direct evidence while being structurally incapable of noticing the one failure
+that disqualifies the capability. That defeats the entire reason critical errors
+became first-class. A task that cannot detect data loss is not a task that can
+fully establish *implement framed TCP message handling*; it is a `supporting`
+task. Validated at publication.
+
+### Result polarity
+
+Observable results are **always stated positively**. `successful` means the good
+outcome obtained:
+
+- mapped to a `success` criterion — `successful` establishes it
+- mapped to a `critical_error` criterion — `successful` means the error was
+  **avoided**; `unsuccessful` means the error was **triggered**
+
+So the `data-integrity` observable succeeding is what establishes the
+`no-data-loss` criterion, and its failing is what fires the critical error. This
+is why criterion codes are phrased positively (`no-data-loss`, not `data-loss`).
+The convention costs nothing and saves a polarity column; authoring guidance
+enforces the phrasing.
 
 ### Implication rules reference criteria
 
@@ -367,7 +426,8 @@ propagate if and only if
       at least one mapped observable exists on this attempt's spec
       AND at least one such mapped observable result succeeded
 
-  AND no blocking critical_error criterion of the source objective was triggered
+  AND no critical_error criterion of the source objective was triggered
+      (i.e. no observable mapped to one of them returned unsuccessful)
 ```
 
 The demo scenario already exercises this path with five gating observable codes,
@@ -535,19 +595,23 @@ changes in this pass and that is expected.
   `verb_definition.allowed_mastery_levels` exists today and governs nothing;
   this makes the verb dictionary governing rather than documentary
 - at least one non-`critical_error` criterion exists
-- every `critical_error` criterion has a severity
 - claim constraints are coherent (e.g. `practical_performance_required` and
   `multiple_choice_alone_sufficient` cannot both hold)
-- context policy is coherent (allowed values belong to their dimension;
-  `minimum_distinct_values > 1` implies `policy = 'required'`)
-- a direct evidence spec covers every non-`critical_error` criterion (§2)
+- context policy is coherent — allowed values belong to their dimension, and a
+  whitelisted value is not a descendant of another whitelisted value on the same
+  dimension (redundant, since allowed values inherit downward)
+- a `direct` evidence spec covers **every** criterion of its objective,
+  critical errors included (§2)
 
 **Role compile** checks assurance and context coherence:
 
 - `required_assurance_class` is explicit on every requirement
-- pinned context dimensions are `required` on the target objective (§1)
+- every constrained context dimension is `required` on the target objective (§1)
+  — this covers pinned values and breadth demands alike
 - pinned context values belong to their dimension and are permitted by any
-  objective allowed-value whitelist
+  objective allowed-value whitelist, descendants included
+- a breadth demand (`minimum_distinct_values > 1`) does not exceed the number of
+  values the dimension actually has, nor the objective's whitelist when it has one
 
 The full role publication validator — satisfiability, available assessments,
 achievable independence — stays in the deferred integrity pass.
@@ -578,8 +642,12 @@ Context is unproven without content.
 
 - `cloud_provider` dimension with values `aws`, `azure`, `gcp`, and
   `aws_govcloud` whose parent is `aws`.
-- `programming_language` dimension with `rust` and at least one other, so the
-  existing Rust objectives can declare language scope.
+- `programming_language` dimension with `rust` and at least one other.
+  **Applied to portable objectives only** — an objective like *implement a
+  correct retry with backoff* is genuinely language-scoped and should declare the
+  dimension. `RUST-NET-L3-001` should not: Rust is already intrinsic to that
+  capability claim, and tagging it `programming_language=rust` duplicates the
+  same semantics in the objective and its context.
 - A `cloud-computing` domain (renamed from the current cloud/infrastructure
   framing) with provider-neutral objectives that declare `cloud_provider` as a
   required dimension, plus a task and administration delivering AWS context.
@@ -600,7 +668,61 @@ merely symmetric grouping.
 
 ---
 
-## §8 Regression coverage
+## §8 Immutability surface
+
+`enforce_objective_revision_immutability` freezes the parent row of a published
+objective revision and nothing else. Every table this pass adds beneath a
+published object needs its own guard, and the criterion mapping tables need one
+for a stronger reason than tidiness: **mutating them retroactively changes what
+already-recorded evidence meant.**
+
+Frozen once their parent objective revision belongs to a published release:
+
+- `catalog.objective_criterion`
+- `catalog.objective_context_policy`
+- `catalog.objective_context_allowed_value`
+- `catalog.objective_claim_evidence_constraint`
+- `catalog.objective_evidence_implication_criterion` — frozen with its
+  implication's release. Changing which criteria gate a proxy rule changes the
+  meaning of every proxy observation already derived through it.
+
+Frozen once the owning task revision has any administration with a recorded
+attempt:
+
+- `assessment.observable_criterion_mapping` — changing which criteria an
+  observable establishes changes what past observable results proved.
+- `assessment.task_variant_context` — changing the context a variant delivers
+  changes the context of evidence already gathered under it.
+
+Frozen with the published role level revision:
+
+- `qualification.objective_requirement_context`
+
+### Context values are evidence semantics, not display metadata
+
+`context_key` stores value **codes**, and qualification matching walks the parent
+chain. So these three fields are load-bearing and become immutable once the value
+is referenced by any `observation_context`, `objective_assertion_context`,
+`objective_requirement_context`, `task_variant_context`, or
+`objective_context_allowed_value` row:
+
+- `dimension_code`
+- `code`
+- `parent_value_id`
+
+Re-parenting `aws_govcloud` after qualifications have been evaluated would
+retroactively alter which evidence satisfies which requirement. `name`,
+`description`, and `active` stay mutable.
+
+### Noted, not fixed here
+
+`qualification.requirement_group` and `qualification.objective_requirement` have
+the same child-row gap beneath a published `role_level_revision`, and always have.
+That is a pre-existing hole, it interacts with making role compilation atomic, and
+both belong to the deferred integrity pass. Recorded so it is not mistaken for
+something this pass closed.
+
+## §9 Regression coverage
 
 A 55-line demo diff cannot prove the semantics this pass introduces. No test
 framework beyond `vitest` and a `test` script on `@lighthouse/db` (the root
@@ -615,7 +737,8 @@ Six cases, each one an invariant this pass creates:
    `demonstrated` scoped assertion.
 4. Proxy implication fails when a required criterion has no mapped successful
    observable — the vacuous-success guard.
-5. Proxy implication fails when a blocking `critical_error` criterion fired.
+5. Proxy implication fails when a `critical_error` criterion fired — that is,
+   an observable mapped to one returned `unsuccessful`.
 6. An observation cannot establish an L3 objective through an administration
    whose effective ceiling is L2.
 
@@ -625,12 +748,10 @@ Plus the `db:demo` output diffed against the captured baseline at every step.
 
 ## Implementation order
 
-1. `0003` DDL and `0004` governance, including immutability guards for the new
-   objective-revision child tables (`objective_criterion`,
-   `objective_context_policy`, `objective_claim_evidence_constraint`,
-   `objective_context_allowed_value`) — the existing
-   `enforce_objective_revision_immutability` trigger protects the parent row
-   only, and these are separate rows a published revision must equally freeze.
+1. `0003` DDL, then `0004` governance: the canonicalization function, the
+   context-value acyclicity and same-dimension parent guards, the
+   effective-ceiling trigger, the implication-criterion source-objective guard,
+   and the full immutability surface in §8.
 2. Schema modules and enums.
 3. `policy.ts` orderings, then `evidence.ts` (recording, ceiling enforcement,
    criterion-based proxy gate), then `assertions.ts` (context grouping,
