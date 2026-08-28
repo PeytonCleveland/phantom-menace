@@ -55,6 +55,14 @@ export const contextPolicyEnum = catalogSchema.enum("context_policy", [
   "not_applicable",
 ]);
 
+export const criterionKindEnum = catalogSchema.enum("criterion_kind", [
+  "success",
+  "quality",
+  "verification",
+  "process",
+  "critical_error",
+]);
+
 export const objectiveRelationshipTypeEnum = catalogSchema.enum("objective_relationship_type", [
   "performance_requires",
   "learning_precedes",

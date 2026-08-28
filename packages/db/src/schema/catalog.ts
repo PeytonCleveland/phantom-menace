@@ -22,6 +22,7 @@ import {
   catalogSchema,
   competencyRelationshipTypeEnum,
   contextPolicyEnum,
+  criterionKindEnum,
   evidenceImplicationTypeEnum,
   evidenceStrengthEnum,
   membershipRoleEnum,
@@ -297,6 +298,33 @@ export const objectiveContextAllowedValue = catalogSchema.table(
   ],
 );
 
+// ---------------------------------------------------------------------------
+// Objective criteria — the missing middle layer between a capability claim and
+// the assessments that observe it.
+//
+// `code` is stable within the objective's LINEAGE, not merely within the
+// revision. That is what later lets objective_revision_transition say
+// "criteria unchanged -> evidence_carries_forward".
+//
+// A `critical_error` criterion is blocking by definition; there is no severity
+// column, because a value the evaluator ignores is worse than no value at all.
+// ---------------------------------------------------------------------------
+
+export const objectiveCriterion = catalogSchema.table(
+  "objective_criterion",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    objectiveRevisionId: uuid("objective_revision_id")
+      .notNull()
+      .references(() => learningObjectiveRevision.id),
+    code: text("code").notNull(),
+    statement: text("statement").notNull(),
+    kind: criterionKindEnum("kind").notNull(),
+    sortOrder: integer("sort_order"),
+  },
+  (t) => [unique("uq_objective_criterion_code").on(t.objectiveRevisionId, t.code)],
+);
+
 export const competencyObjectiveMembership = catalogSchema.table(
   "competency_objective_membership",
   {
@@ -487,6 +515,33 @@ export const objectiveEvidenceImplication = catalogSchema.table(
       "ck_evidence_implication_max_state",
       sql`maximum_target_state IN ('developing', 'demonstrated')`,
     ),
+  ],
+);
+
+// Explicit, shortened constraint names below: the auto-generated names for
+// this table's PK and FKs share a long common prefix that Postgres truncates
+// to 63 bytes, which collided ("... already exists") under the default names.
+export const objectiveEvidenceImplicationCriterion = catalogSchema.table(
+  "objective_evidence_implication_criterion",
+  {
+    implicationId: uuid("implication_id").notNull(),
+    objectiveCriterionId: uuid("objective_criterion_id").notNull(),
+  },
+  (t) => [
+    primaryKey({
+      name: "pk_evidence_implication_criterion",
+      columns: [t.implicationId, t.objectiveCriterionId],
+    }),
+    foreignKey({
+      name: "fk_evidence_implication_criterion_implication",
+      columns: [t.implicationId],
+      foreignColumns: [objectiveEvidenceImplication.id],
+    }),
+    foreignKey({
+      name: "fk_evidence_implication_criterion_criterion",
+      columns: [t.objectiveCriterionId],
+      foreignColumns: [objectiveCriterion.id],
+    }),
   ],
 );
 

@@ -104,7 +104,7 @@ async function main(): Promise<void> {
     );
 
     console.log("── Tasks and evidence contracts (§19)");
-    const task = await createTask(db, releaseId, rustFramingChallenge);
+    const task = await createTask(db, releaseId, rustFramingChallenge, session.criterionIdByCode);
     console.log(
       `   ${rustFramingChallenge.code}: ${task.evidenceSpecIdByObjectiveCode.size} evidence specs, ` +
         `${task.variantIdByCode.size} variants, ${task.administrationIdByMode.size} administrations`,

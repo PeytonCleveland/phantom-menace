@@ -171,6 +171,71 @@ export async function validateRelease(
     );
   }
 
+  // §2: `direct` means claim-complete, so a direct spec must be able to observe
+  // EVERY criterion of its objective — critical errors included. A task that
+  // cannot detect data loss is a supporting task, not a direct one.
+  const uncoveredCriteria = await db.execute(sql`
+    SELECT lo.canonical_code, c.code AS criterion_code
+    FROM assessment.task_objective_evidence_spec spec
+    JOIN catalog.learning_objective_revision lor ON lor.id = spec.objective_revision_id
+    JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+    JOIN catalog.framework_release_objective fro
+      ON fro.objective_revision_id = lor.id AND fro.framework_release_id = ${frameworkReleaseId}
+    JOIN catalog.objective_criterion c ON c.objective_revision_id = lor.id
+    WHERE spec.evidence_strength = 'direct'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM assessment.observable_criterion_mapping m
+        JOIN assessment.evidence_spec_observable obs ON obs.id = m.evidence_spec_observable_id
+        WHERE obs.evidence_spec_id = spec.id AND m.objective_criterion_id = c.id
+      )
+  `);
+  for (const row of uncoveredCriteria.rows) {
+    errors.push(
+      `direct evidence spec for ${row.canonical_code} does not observe criterion ${row.criterion_code}`,
+    );
+  }
+
+  // §5: the verb dictionary must govern, not merely document.
+  const verbLevelMismatches = await db.execute(sql`
+    SELECT lo.canonical_code, lor.verb_code, lor.mastery_level
+    FROM catalog.framework_release_objective fro
+    JOIN catalog.learning_objective_revision lor ON lor.id = fro.objective_revision_id
+    JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+    JOIN catalog.verb_definition v ON v.code = lor.verb_code
+    WHERE fro.framework_release_id = ${frameworkReleaseId}
+      AND NOT (lor.mastery_level = ANY(v.allowed_mastery_levels))
+  `);
+  for (const row of verbLevelMismatches.rows) {
+    errors.push(
+      `objective ${row.canonical_code} uses verb ${row.verb_code} at L${row.mastery_level}, which the verb does not allow`,
+    );
+  }
+
+  // Every objective must carry at least one non-critical-error criterion.
+  //
+  // NOTE (Task 4): deferred until Task 5 seeds `criteria` on every objective
+  // (see Task 4 report). Enabling this now would reject every objective in
+  // the current seed, since none carry structured criteria yet — the same
+  // reason `ObjectiveInput.criteria` is still optional and Step 11 (seeding
+  // `criteria: []`/real criteria) was pushed to Task 5. Task 5 must uncomment
+  // this block once every seeded objective supplies at least one criterion.
+  //
+  // const criterionlessObjectives = await db.execute(sql`
+  //   SELECT lo.canonical_code
+  //   FROM catalog.framework_release_objective fro
+  //   JOIN catalog.learning_objective_revision lor ON lor.id = fro.objective_revision_id
+  //   JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+  //   WHERE fro.framework_release_id = ${frameworkReleaseId}
+  //     AND NOT EXISTS (
+  //       SELECT 1 FROM catalog.objective_criterion c
+  //       WHERE c.objective_revision_id = lor.id AND c.kind <> 'critical_error'
+  //     )
+  // `);
+  // for (const row of criterionlessObjectives.rows) {
+  //   errors.push(`objective ${row.canonical_code} has no non-critical-error criterion`);
+  // }
+
   return { errors, warnings };
 }
 

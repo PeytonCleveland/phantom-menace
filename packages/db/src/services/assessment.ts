@@ -21,6 +21,7 @@ export async function createTask(
   db: Database,
   frameworkReleaseId: string,
   seed: TaskSeed,
+  criterionIdByCode: ReadonlyMap<string, string>,
 ): Promise<CreatedTask> {
   return db.transaction(async (tx) => {
     const [template] = await tx
@@ -111,14 +112,28 @@ export async function createTask(
       evidenceSpecIdByObjectiveCode.set(spec.objectiveCode, createdSpec.id);
 
       for (const [index, observable] of (spec.observables ?? []).entries()) {
-        await tx.insert(s.evidenceSpecObservable).values({
-          evidenceSpecId: createdSpec.id,
-          code: observable.code,
-          statement: observable.statement,
-          observableType: observable.observableType,
-          critical: observable.critical,
-          sortOrder: index,
-        });
+        const [createdObservable] = await tx
+          .insert(s.evidenceSpecObservable)
+          .values({
+            evidenceSpecId: createdSpec.id,
+            code: observable.code,
+            statement: observable.statement,
+            observableType: observable.observableType,
+            critical: observable.critical,
+            sortOrder: index,
+          })
+          .returning({ id: s.evidenceSpecObservable.id });
+        if (!createdObservable) throw new Error(`failed to insert observable ${observable.code}`);
+
+        for (const criterionCode of observable.criterionCodes ?? []) {
+          const key = `${spec.objectiveCode}:${criterionCode}`;
+          const criterionId = criterionIdByCode.get(key);
+          if (!criterionId) throw new Error(`unknown criterion ${key}`);
+          await tx.insert(s.observableCriterionMapping).values({
+            evidenceSpecObservableId: createdObservable.id,
+            objectiveCriterionId: criterionId,
+          });
+        }
       }
     }
 

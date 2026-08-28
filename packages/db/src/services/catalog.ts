@@ -29,6 +29,12 @@ export interface CompetencyInput {
   sortOrder?: number;
 }
 
+export interface CriterionInput {
+  code: string;
+  statement: string;
+  kind: "success" | "quality" | "verification" | "process" | "critical_error";
+}
+
 export interface ObjectiveInput {
   code: string;
   title: string;
@@ -44,6 +50,8 @@ export interface ObjectiveInput {
   /** Canonical code of the primary competency. */
   primaryCompetencyCode: string;
   sortOrder?: number;
+  // Optional until Task 5 seeds criteria for every objective; then required.
+  criteria?: CriterionInput[];
 }
 
 export interface ObjectiveRelationshipInput {
@@ -72,6 +80,7 @@ export interface EvidenceImplicationInput {
   derivedEvidenceStrength: (typeof s.evidenceStrengthEnum.enumValues)[number];
   maximumTargetState: "developing" | "demonstrated";
   requiredObservableCodes?: string[];
+  requiredCriterionCodes?: string[];
   automatic?: boolean;
   transitive?: boolean;
   rationale: string;
@@ -86,6 +95,8 @@ export class CatalogSession {
   readonly domainRevisionByCode = new Map<string, string>();
   readonly competencyRevisionByCode = new Map<string, string>();
   readonly objectiveRevisionByCode = new Map<string, string>();
+  /** "<objectiveCode>:<criterionCode>" -> objective_criterion.id */
+  readonly criterionIdByCode = new Map<string, string>();
 
   constructor(
     private readonly db: Database,
@@ -168,6 +179,7 @@ export class CatalogSession {
 
   async createObjective(input: ObjectiveInput): Promise<string> {
     const competencyRevisionId = this.requireCompetency(input.primaryCompetencyCode);
+    const criterionIds: Array<[string, string]> = [];
 
     const revisionId = await this.db.transaction(async (tx) => {
       const [identity] = await tx
@@ -208,10 +220,26 @@ export class CatalogSession {
         sortOrder: input.sortOrder,
       });
 
+      for (const [index, criterion] of (input.criteria ?? []).entries()) {
+        const [created] = await tx
+          .insert(s.objectiveCriterion)
+          .values({
+            objectiveRevisionId: revision.id,
+            code: criterion.code,
+            statement: criterion.statement,
+            kind: criterion.kind,
+            sortOrder: index,
+          })
+          .returning({ id: s.objectiveCriterion.id });
+        if (!created) throw new Error(`failed to insert criterion ${criterion.code}`);
+        criterionIds.push([`${input.code}:${criterion.code}`, created.id]);
+      }
+
       return revision.id;
     });
 
     this.objectiveRevisionByCode.set(input.code, revisionId);
+    for (const [key, id] of criterionIds) this.criterionIdByCode.set(key, id);
     return revisionId;
   }
 
@@ -241,19 +269,38 @@ export class CatalogSession {
   }
 
   async createEvidenceImplication(input: EvidenceImplicationInput): Promise<void> {
-    await this.db.insert(s.objectiveEvidenceImplication).values({
-      frameworkReleaseId: this.frameworkReleaseId,
-      sourceObjectiveRevisionId: this.requireObjective(input.sourceCode),
-      targetObjectiveRevisionId: this.requireObjective(input.targetCode),
-      implicationType: input.implicationType,
-      derivedEvidenceStrength: input.derivedEvidenceStrength,
-      maximumTargetState: input.maximumTargetState,
-      requiredObservableCodes: input.requiredObservableCodes ?? [],
-      automatic: input.automatic ?? false,
-      transitive: input.transitive ?? false,
-      rationale: input.rationale,
-      validationStatus: input.validationStatus ?? "approved",
-    });
+    const [created] = await this.db
+      .insert(s.objectiveEvidenceImplication)
+      .values({
+        frameworkReleaseId: this.frameworkReleaseId,
+        sourceObjectiveRevisionId: this.requireObjective(input.sourceCode),
+        targetObjectiveRevisionId: this.requireObjective(input.targetCode),
+        implicationType: input.implicationType,
+        derivedEvidenceStrength: input.derivedEvidenceStrength,
+        maximumTargetState: input.maximumTargetState,
+        requiredObservableCodes: input.requiredObservableCodes ?? [],
+        automatic: input.automatic ?? false,
+        transitive: input.transitive ?? false,
+        rationale: input.rationale,
+        validationStatus: input.validationStatus ?? "approved",
+      })
+      .returning({ id: s.objectiveEvidenceImplication.id });
+    if (!created) throw new Error(`failed to insert implication ${input.sourceCode}`);
+
+    // Required criteria always belong to the SOURCE objective — they describe
+    // what the source assessment established, not what the target claims.
+    for (const criterionCode of input.requiredCriterionCodes ?? []) {
+      await this.db.insert(s.objectiveEvidenceImplicationCriterion).values({
+        implicationId: created.id,
+        objectiveCriterionId: this.requireCriterion(input.sourceCode, criterionCode),
+      });
+    }
+  }
+
+  requireCriterion(objectiveCode: string, criterionCode: string): string {
+    const id = this.criterionIdByCode.get(`${objectiveCode}:${criterionCode}`);
+    if (!id) throw new Error(`unknown criterion ${objectiveCode}:${criterionCode}`);
+    return id;
   }
 
   requireDomain(code: string): string {

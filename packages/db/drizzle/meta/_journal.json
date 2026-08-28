@@ -36,6 +36,13 @@
       "when": 1788000000000,
       "tag": "0004_evidence_semantics_governance",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787951671819,
+      "tag": "0005_objective_criteria",
+      "breakpoints": true
     }
   ]
 }

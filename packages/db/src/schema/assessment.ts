@@ -13,7 +13,7 @@ import {
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { frameworkRelease, learningObjectiveRevision } from "./catalog";
+import { frameworkRelease, learningObjectiveRevision, objectiveCriterion } from "./catalog";
 import { contextDimension, contextValue } from "./context";
 import {
   administrationModeEnum,
@@ -189,6 +189,22 @@ export const evidenceSpecObservable = assessmentSchema.table(
       sql`observable_type IN ('behavior', 'product', 'outcome', 'process', 'explanation', 'judgment')`,
     ),
   ],
+);
+
+// Many-to-many on purpose. One hidden executable test can establish several
+// criteria at once, and one criterion can be established by several
+// independent observables — an automated check plus a human rubric item.
+export const observableCriterionMapping = assessmentSchema.table(
+  "observable_criterion_mapping",
+  {
+    evidenceSpecObservableId: uuid("evidence_spec_observable_id")
+      .notNull()
+      .references(() => evidenceSpecObservable.id),
+    objectiveCriterionId: uuid("objective_criterion_id")
+      .notNull()
+      .references(() => objectiveCriterion.id),
+  },
+  (t) => [primaryKey({ columns: [t.evidenceSpecObservableId, t.objectiveCriterionId] })],
 );
 
 // ---------------------------------------------------------------------------

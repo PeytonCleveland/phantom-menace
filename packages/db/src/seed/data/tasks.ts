@@ -11,6 +11,7 @@ export interface ObservableSeed {
   statement: string;
   observableType: "behavior" | "product" | "outcome" | "process" | "explanation" | "judgment";
   critical: boolean;
+  criterionCodes?: string[];
 }
 
 export interface EvidenceSpecSeed {
