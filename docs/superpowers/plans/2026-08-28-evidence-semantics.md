@@ -19,6 +19,7 @@
 - **Observable results are always stated positively.** `successful` means the good outcome obtained — for a `critical_error` criterion that means the error was *avoided*.
 - **`direct` evidence strength means claim-complete**, not merely "not proxy".
 - Verification commands, run from the repo root: `pnpm lint`, `pnpm check-types`, `pnpm db:reset`, `pnpm --filter @lighthouse/db db:demo`, `pnpm --filter @lighthouse/db test`.
+- **Postgres truncates identifiers at 63 bytes.** Drizzle auto-generates constraint names by concatenating table + column + suffix, so long table names (e.g. `objective_evidence_implication_criterion`) can produce a PK and an FK whose names collide after truncation, breaking the migration. Give explicit short constraint names on any table whose generated names would exceed 63 bytes. Found the hard way in Task 4.
 - **drizzle-kit mis-splits raw SQL containing a literal `;`**, even inside a quoted string, corrupting the emitted migration `.sql` while leaving the snapshot JSON correct. If a `check()` or other raw SQL fragment needs a semicolon, write it as a Postgres hex escape (`E'[\x3B=]'`), never literally. Found the hard way in Task 2.
 - Biome config is 2-space indent, 100-char lines, double quotes. Run `pnpm lint:fix` before committing if `pnpm lint` complains.
 
@@ -1703,15 +1704,31 @@ Keep `requiredObservableCodes` for now — Task 6 switches the gate over, Task 7
 
 Note the equivalence being preserved: the old gate required `buffer-preservation`, `multiple-frames`, `partial-header`, `partial-body`, and `data-integrity` to succeed. The three criteria above cover the first four; `data-integrity` is now enforced by the `no-data-loss` critical-error gate, which applies to every rule automatically.
 
-- [ ] **Step 6: Reset and run the tests**
+- [ ] **Step 6: Re-enable the validation Task 4 had to disable, and unskip its tests**
+
+Task 4 added three checks to `validateRelease` but had to comment one out — "every
+objective must carry at least one non-`critical_error` criterion" — because it fired 39
+times against a seed that had no criteria yet. Now that every objective has criteria,
+**uncomment it verbatim** (the SQL and message were preserved, not weakened) and confirm
+`db:reset` still publishes cleanly. If it still fires, an objective is missing criteria —
+fix the seed, never the check.
+
+Task 4 also committed the two `criteria.test.ts` tests as `test.skip` for the same reason.
+**Remove both `.skip` markers** and confirm they pass.
+
+- [ ] **Step 7: Reset and run the tests**
 
 Run: `pnpm db:reset && pnpm --filter @lighthouse/db test`
 Expected: `db:reset` publishes the release with no new errors; both `criteria.test.ts` tests now pass.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Make `criteria` required and commit**
+
+Task 4 declared `ObjectiveInput.criteria` optional so the untouched seed would type-check.
+Now that all 39 objectives supply criteria, change it to required (`criteria: CriterionInput[]`)
+and confirm `pnpm check-types` passes.
 
 ```bash
-git add packages/db/src/seed
+git add packages/db/src packages/db/src/seed
 git commit -m "feat: convert all seeded objectives to first-class criteria"
 ```
 
