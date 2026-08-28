@@ -5,9 +5,12 @@ import * as s from "../schema/index";
 import { createTask } from "../services/assessment";
 import { CapabilitySetService } from "../services/capability-sets";
 import { CatalogSession, createRelease, ensureFramework } from "../services/catalog";
+import { ContextService } from "../services/context";
 import { publishRelease } from "../services/publication";
 import { RoleCompiler } from "../services/role-compiler";
+import { cloudObjectives } from "./data/cloud";
 import { competencies } from "./data/competencies";
+import { contextDimensions, contextValues } from "./data/context";
 import { domains } from "./data/domains";
 import { objectives } from "./data/objectives";
 import {
@@ -68,6 +71,12 @@ async function main(): Promise<void> {
     });
     console.log(`   ${FRAMEWORK_CODE} ${RELEASE_VERSION} (${releaseId})`);
 
+    console.log("── Context dimensions");
+    const contextService = new ContextService(db);
+    for (const dimension of contextDimensions) await contextService.createDimension(dimension);
+    for (const value of contextValues) await contextService.createValue(value);
+    console.log(`   ${contextDimensions.length} dimensions, ${contextValues.length} values`);
+
     const session = new CatalogSession(db, releaseId);
 
     console.log("── Domains (§16, §17)");
@@ -84,10 +93,11 @@ async function main(): Promise<void> {
     console.log(`   ${competencies.length} competencies`);
 
     console.log("── Learning objectives (§18)");
-    for (const [index, objective] of objectives.entries()) {
+    const allObjectives = [...objectives, ...cloudObjectives];
+    for (const [index, objective] of allObjectives.entries()) {
       await session.createObjective({ ...objective, sortOrder: index });
     }
-    console.log(`   ${objectives.length} objectives`);
+    console.log(`   ${allObjectives.length} objectives`);
 
     console.log("── Relationships and implications");
     for (const edge of competencyRelationships) {

@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Database } from "../client";
 import * as s from "../schema/index";
 
@@ -55,6 +55,12 @@ export interface ObjectiveInput {
     multipleChoiceAloneSufficient: boolean;
     directObservationPossible: boolean;
   };
+  contextPolicies?: Array<{
+    dimensionCode: string;
+    policy: "required" | "optional" | "not_applicable";
+    /** Whitelist. Allowed values inherit downward: permitting aws permits aws_govcloud. */
+    allowedValueCodes?: string[];
+  }>;
 }
 
 export interface ObjectiveRelationshipInput {
@@ -238,6 +244,23 @@ export class CatalogSession {
         objectiveRevisionId: revision.id,
         ...input.claimEvidenceConstraints,
       });
+
+      for (const contextPolicy of input.contextPolicies ?? []) {
+        await tx.insert(s.objectiveContextPolicy).values({
+          objectiveRevisionId: revision.id,
+          dimensionCode: contextPolicy.dimensionCode,
+          policy: contextPolicy.policy,
+        });
+        for (const valueCode of contextPolicy.allowedValueCodes ?? []) {
+          await tx.execute(sql`
+            INSERT INTO catalog.objective_context_allowed_value
+              (objective_revision_id, dimension_code, context_value_id)
+            SELECT ${revision.id}, ${contextPolicy.dimensionCode}, id
+            FROM catalog.context_value
+            WHERE dimension_code = ${contextPolicy.dimensionCode} AND code = ${valueCode}
+          `);
+        }
+      }
 
       return revision.id;
     });

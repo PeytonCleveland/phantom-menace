@@ -269,6 +269,7 @@ const taxonomy: Record<string, Array<string | CompetencyEntry>> = {
     "Shared Responsibility",
     "Infrastructure Configuration",
     "Environment Isolation",
+    "Application Deployment",
   ],
   "infrastructure-as-code": [
     "Declarative Infrastructure",

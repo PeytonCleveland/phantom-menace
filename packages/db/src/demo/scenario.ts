@@ -251,6 +251,56 @@ async function main(): Promise<void> {
       `   RUST-NET-L2-003 with direct required: satisfied=${directRequired.satisfied} (${directRequired.reason})`,
     );
 
+    // ── Context: does the same evidence satisfy different-provider claims? ─
+    console.log("\n── §1 Context: where was this capability demonstrated?");
+    const cloudObjective = ctx.objective("CLOUD-DEPLOY-L3-001");
+    for (const [evidenceValue, expectations] of [
+      ["aws", ["aws", "azure", "aws_govcloud"]],
+      ["aws_govcloud", ["aws"]],
+    ] as const) {
+      const [contextLearner] = await db
+        .insert(s.profile)
+        .values({
+          displayName: `Context Demo (${evidenceValue})`,
+          externalSubjectId: `context-demo-${evidenceValue}-${Date.now()}`,
+        })
+        .returning({ id: s.profile.id });
+      if (!contextLearner) throw new Error("failed to create context learner");
+
+      const observationId = await recordObservation(db, {
+        learnerId: contextLearner.id,
+        objectiveRevisionId: cloudObjective,
+        result: "successful",
+        evidenceStrength: "direct",
+        independenceLevel: 4,
+        transferDistance: "near",
+        performanceScope: "composite",
+        contexts: { cloud_provider: evidenceValue },
+      });
+      await recalculateForObservations(db, [observationId]);
+
+      for (const requirementValue of expectations) {
+        const outcome = await checkObjectiveSatisfaction(db, contextLearner.id, cloudObjective, {
+          directEvidenceRequired: false,
+          proxyEvidenceAllowed: true,
+          minimumIndependence: null,
+          minimumTransferDistance: null,
+          minimumPerformanceScope: null,
+          maximumEvidenceAge: null,
+          contexts: [
+            {
+              dimensionCode: "cloud_provider",
+              valueCode: requirementValue,
+              minimumDistinctValues: 1,
+            },
+          ],
+        });
+        console.log(
+          `   evidence ${evidenceValue} vs requirement ${requirementValue}: ${outcome.satisfied ? "PASS" : "FAIL"}`,
+        );
+      }
+    }
+
     // ── Step 13 recap: frontier after the mission ──────────────────────────
     console.log("\n── Frontier after the mission (top 5)");
     const after = await computeFrontier(db, learner.id, ctx.roleLevelRevisionId);

@@ -4,6 +4,7 @@ import * as s from "../schema/index";
 import { recalculateForObservations } from "../services/assertions";
 import { ContextService, canonicalContextKey } from "../services/context";
 import { recordObservation } from "../services/evidence";
+import { checkObjectiveSatisfaction } from "../services/role-state";
 import { createLearner, objectiveId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
@@ -126,4 +127,78 @@ test("an objective with no required dimensions keys its assertion to the empty s
   expect(forObjective).toHaveLength(1);
   expect(forObjective?.[0]?.contextKey).toBe("");
   expect(forObjective?.[0]?.state).toBe("demonstrated");
+});
+
+const cloudPolicy = (valueCode: string | null) => ({
+  directEvidenceRequired: false,
+  proxyEvidenceAllowed: true,
+  minimumIndependence: null,
+  minimumTransferDistance: null,
+  minimumPerformanceScope: null,
+  maximumEvidenceAge: null,
+  contexts: [{ dimensionCode: "cloud_provider", valueCode, minimumDistinctValues: 1 }],
+});
+
+test("GovCloud evidence satisfies an AWS requirement, but not the reverse", async () => {
+  const govcloudLearner = await createLearner(db, "ctx-govcloud");
+  const target = await objectiveId(db, "CLOUD-DEPLOY-L3-001");
+
+  const observationId = await recordObservation(db, {
+    learnerId: govcloudLearner,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    contexts: { cloud_provider: "aws_govcloud" },
+  });
+  await recalculateForObservations(db, [observationId]);
+
+  const asAws = await checkObjectiveSatisfaction(db, govcloudLearner, target, cloudPolicy("aws"));
+  expect(asAws.satisfied).toBe(true);
+
+  const awsLearner = await createLearner(db, "ctx-aws");
+  const awsObservation = await recordObservation(db, {
+    learnerId: awsLearner,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    contexts: { cloud_provider: "aws" },
+  });
+  await recalculateForObservations(db, [awsObservation]);
+
+  const asGovcloud = await checkObjectiveSatisfaction(
+    db,
+    awsLearner,
+    target,
+    cloudPolicy("aws_govcloud"),
+  );
+  expect(asGovcloud.satisfied).toBe(false);
+
+  const asAzure = await checkObjectiveSatisfaction(db, awsLearner, target, cloudPolicy("azure"));
+  expect(asAzure.satisfied).toBe(false);
+});
+
+test("an observation missing a required dimension cannot produce a demonstrated assertion", async () => {
+  const learnerId = await createLearner(db, "ctx-incomplete");
+  const target = await objectiveId(db, "CLOUD-DEPLOY-L3-001");
+
+  const observationId = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    // No cloud_provider, which the objective declares required.
+  });
+  const results = await recalculateForObservations(db, [observationId]);
+  const result = results.get(target);
+  expect(result?.outcomes ?? []).toEqual([]);
+  expect(result?.diagnostics.skippedIncompleteContext).toBe(1);
 });
