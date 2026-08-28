@@ -22,10 +22,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "the transport layer's role in the network stack",
-    successCriteria: [
-      "Accurately describes what the transport layer provides beyond IP",
-      "Explanation holds up under probing with follow-up questions",
-    ],
     criteria: [
       {
         code: "describes-transport-value",
@@ -49,10 +45,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "TCP connection lifecycle",
-    successCriteria: [
-      "Correctly sequences handshake and termination steps",
-      "Explains the purpose of each step, not just the order",
-    ],
     criteria: [
       {
         code: "correct-handshake-sequence",
@@ -76,10 +68,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "TCP byte-stream semantics",
-    successCriteria: [
-      "States TCP's ordering and delivery guarantees correctly",
-      "Correctly describes what a single read may return",
-    ],
     criteria: [
       {
         code: "states-ordering-guarantees",
@@ -103,10 +91,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "absence of message boundaries in TCP",
-    successCriteria: [
-      "Explains the causal mechanism (segmentation, buffering, coalescing)",
-      "States the implication: applications must frame their own messages",
-    ],
     criteria: [
       {
         code: "explains-causal-mechanism",
@@ -130,10 +114,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "predict",
     assuranceClass: "A",
     performanceObject: "partial read/write behavior over TCP",
-    successCriteria: [
-      "Correct predictions across unseen read/buffer scenarios",
-      "Rationale tied to byte-stream semantics rather than memorized cases",
-    ],
     criteria: [
       {
         code: "correct-unseen-predictions",
@@ -157,10 +137,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "TCP EOF and shutdown behavior",
-    successCriteria: [
-      "Correctly interprets a zero-length read",
-      "Explains half-closed connection behavior in both directions",
-    ],
     criteria: [
       {
         code: "interprets-zero-length-read",
@@ -184,10 +160,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "UDP datagram semantics",
-    successCriteria: [
-      "Correctly contrasts datagram boundaries with TCP's byte stream",
-      "States delivery and ordering non-guarantees accurately",
-    ],
     criteria: [
       {
         code: "contrasts-datagram-boundaries",
@@ -211,10 +183,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "predict",
     assuranceClass: "A",
     performanceObject: "UDP failure modes",
-    successCriteria: [
-      "Correct predictions for loss, duplication, and reordering cases",
-      "Identifies which applications tolerate which failure modes",
-    ],
     criteria: [
       {
         code: "correct-failure-predictions",
@@ -238,10 +206,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "distinguish",
     assuranceClass: "A",
     performanceObject: "transport protocol selection",
-    successCriteria: [
-      "Correct classification across varied application scenarios",
-      "Explicit basis for each distinction",
-    ],
     criteria: [
       {
         code: "correct-protocol-classification",
@@ -269,10 +233,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "interpret",
     assuranceClass: "B",
     performanceObject: "live TCP connection state",
-    successCriteria: [
-      "Selects an appropriate inspection tool",
-      "Correctly interprets connection states and endpoints",
-    ],
     criteria: [
       {
         code: "selects-appropriate-tool",
@@ -296,10 +256,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "verify",
     assuranceClass: "B",
     performanceObject: "TCP endpoint reachability",
-    successCriteria: [
-      "Uses appropriate checks (e.g. nc, curl, ss) to test the endpoint",
-      "Correctly distinguishes refusal, timeout, and success",
-    ],
     criteria: [
       {
         code: "uses-appropriate-checks",
@@ -323,10 +279,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "interpret",
     assuranceClass: "B",
     performanceObject: "TCP failure signals",
-    successCriteria: [
-      "Accurate interpretation across representative failure variations",
-      "States likely causes and next diagnostic step for each",
-    ],
     criteria: [
       {
         code: "accurate-failure-interpretation",
@@ -350,10 +302,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "execute",
     assuranceClass: "B",
     performanceObject: "UDP datagram exchange",
-    successCriteria: [
-      "Successfully exchanges datagrams between two endpoints",
-      "Observes and correctly reports datagram boundary behavior",
-    ],
     criteria: [
       {
         code: "exchanges-datagrams-successfully",
@@ -381,11 +329,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "diagnose",
     assuranceClass: "B",
     performanceObject: "TCP connectivity failure",
-    successCriteria: [
-      "Hypotheses are plausible and tested with discriminating evidence",
-      "Causal conclusion is verified, not guessed",
-    ],
-    criticalErrors: ["declares a cause without verification"],
     criteria: [
       {
         code: "plausible-tested-hypotheses",
@@ -414,10 +357,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "evaluate",
     assuranceClass: "B",
     performanceObject: "transport approach selection",
-    successCriteria: [
-      "Criteria are explicit and appropriate to the requirement",
-      "Recommendation is substantiated with accurate findings",
-    ],
     criteria: [
       {
         code: "explicit-appropriate-criteria",
@@ -441,12 +380,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "diagnose",
     assuranceClass: "C",
     performanceObject: "complex transport failure",
-    successCriteria: [
-      "Systematically discriminates between multi-layer explanations",
-      "Handles false leads without fixating on an early hypothesis",
-      "Conclusion verified under the intermittent condition",
-    ],
-    criticalErrors: ["ships a fix without demonstrating the causal mechanism"],
     criteria: [
       {
         code: "discriminates-multilayer-explanations",
@@ -480,10 +413,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "evaluate",
     assuranceClass: "C",
     performanceObject: "transport tradeoff analysis",
-    successCriteria: [
-      "Tradeoff analysis addresses interacting constraints, not one dimension",
-      "Judgment substantiated with evidence and explicit criteria",
-    ],
     criteria: [
       {
         code: "addresses-interacting-constraints",
@@ -508,10 +437,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "establish",
     assuranceClass: "C",
     performanceObject: "organizational transport engineering practice",
-    successCriteria: [
-      "Practice or standard adopted beyond a single system or team",
-      "Longitudinal evidence of measurable reliability improvement",
-    ],
     criteria: [
       {
         code: "adopted-beyond-single-team",
@@ -539,10 +464,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "TcpStream's byte-stream model",
-    successCriteria: [
-      "Maps TcpStream read/write behavior to TCP semantics correctly",
-      "Explanation survives probing with edge cases (short reads, EOF)",
-    ],
     criteria: [
       {
         code: "maps-behavior-to-semantics",
@@ -566,10 +487,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "trace",
     assuranceClass: "A",
     performanceObject: "read-buffer state transitions",
-    successCriteria: [
-      "Accurately reports intermediate buffer states and counts",
-      "Accounts for leftover and unconsumed bytes, not just the final state",
-    ],
     criteria: [
       {
         code: "reports-buffer-states-and-counts",
@@ -593,10 +510,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "explain",
     assuranceClass: "A",
     performanceObject: "Rust I/O result representation",
-    successCriteria: [
-      "Correctly distinguishes Ok(n), Ok(0), and Err cases",
-      "States caller obligations for each condition",
-    ],
     criteria: [
       {
         code: "distinguishes-ok-err-cases",
@@ -624,10 +537,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "TcpStream connection",
-    successCriteria: [
-      "Connection succeeds against a live endpoint",
-      "Connection failure surfaces as a handled error, not a panic",
-    ],
     criteria: [
       {
         code: "connection-succeeds",
@@ -651,11 +560,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "buffered socket reads",
-    successCriteria: [
-      "Only the returned count of bytes is treated as valid data",
-      "Buffer reuse does not expose stale bytes",
-    ],
-    criticalErrors: ["processes the full buffer regardless of bytes read"],
     criteria: [
       {
         code: "bounds-by-returned-count",
@@ -684,14 +588,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "partial-read handling",
-    successCriteria: [
-      "Incomplete data is preserved across successive reads",
-      "Behavior is correct for any read-boundary split",
-    ],
-    criticalErrors: [
-      "assumes one read returns one complete message",
-      "discards bytes from an incomplete unit",
-    ],
     criteria: [
       {
         code: "no-one-read-one-message",
@@ -725,11 +621,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "EOF and I/O error handling",
-    successCriteria: [
-      "EOF is detected and handled according to protocol state",
-      "Interrupted and WouldBlock conditions are handled appropriately",
-    ],
-    criticalErrors: ["treats EOF as an infinite-loop read of zero bytes"],
     criteria: [
       {
         code: "eof-handled-per-protocol",
@@ -758,10 +649,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "partial-write handling",
-    successCriteria: [
-      "All bytes of the logical message are delivered exactly once",
-      "Write errors are surfaced, not swallowed",
-    ],
     criteria: [
       {
         code: "delivers-message-exactly-once",
@@ -785,10 +672,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "configure",
     assuranceClass: "B",
     performanceObject: "socket configuration",
-    successCriteria: [
-      "Configuration satisfies the stated requirements",
-      "Resulting behavior is verified, including the timeout path",
-    ],
     criteria: [
       {
         code: "satisfies-stated-requirements",
@@ -812,10 +695,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "UDP datagram exchange in Rust",
-    successCriteria: [
-      "Datagrams are exchanged with boundaries preserved",
-      "Receive-buffer sizing and truncation behavior handled correctly",
-    ],
     criteria: [
       {
         code: "preserves-datagram-boundaries",
@@ -847,20 +726,6 @@ export const objectives: ObjectiveInput[] = [
       context: "unfamiliar but reasonably scoped codebase",
       assistance: "normal technical documentation permitted, no step-level help",
     },
-    successCriteria: [
-      "Incomplete frame data is preserved across arbitrary read boundaries",
-      "Multiple complete frames within one read are all processed",
-      "Frame headers and bodies split across reads are handled",
-      "EOF and I/O errors are handled according to protocol state",
-      "No bytes are lost, duplicated, or reordered",
-      "Behavior is verified with tests covering varied read boundaries",
-    ],
-    criticalErrors: [
-      "assumes one read equals one message",
-      "discards incomplete frame bytes",
-      "silently loses or duplicates bytes",
-      "declares success without verification",
-    ],
     criteria: [
       {
         code: "preserve-incomplete-data",
@@ -904,11 +769,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "framed-message writer",
-    successCriteria: [
-      "Frames are well-formed and parseable by a conforming reader",
-      "Partial writes are completed; no interleaved or truncated frames",
-      "Write failures are surfaced with usable error context",
-    ],
     criteria: [
       {
         code: "well-formed-parseable-frames",
@@ -937,12 +797,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "diagnose",
     assuranceClass: "B",
     performanceObject: "TCP framing defect",
-    successCriteria: [
-      "Failure is reproduced deterministically or characterized statistically",
-      "Causal mechanism is demonstrated with discriminating evidence",
-      "Correction is verified against the original failure mode",
-    ],
-    criticalErrors: ["guesses a fix without demonstrating the cause"],
     criteria: [
       {
         code: "reproduces-or-characterizes-failure",
@@ -976,11 +830,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "design",
     assuranceClass: "B",
     performanceObject: "network-I/O test design",
-    successCriteria: [
-      "Tests cover read-boundary, EOF, and error-path edge cases",
-      "Each test is traceable to a specific failure mode",
-      "Tests are deterministic",
-    ],
     criteria: [
       {
         code: "covers-key-edge-cases",
@@ -1013,12 +862,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "diagnose",
     assuranceClass: "C",
     performanceObject: "async network-I/O failure",
-    successCriteria: [
-      "Discriminates among interacting async failure mechanisms",
-      "Evidence rules out plausible competing explanations",
-      "Conclusion and correction verified under realistic load",
-    ],
-    criticalErrors: ["attributes the failure to an unverified mechanism"],
     criteria: [
       {
         code: "discriminates-async-mechanisms",
@@ -1052,10 +895,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "evaluate",
     assuranceClass: "C",
     performanceObject: "network-I/O architecture",
-    successCriteria: [
-      "Tradeoffs are justified with measurements, not intuition alone",
-      "Adaptation preserves correctness properties (no data loss or duplication)",
-    ],
     criteria: [
       {
         code: "justified-with-measurements",
@@ -1079,10 +918,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "integrate",
     assuranceClass: "C",
     performanceObject: "framed I/O in a distributed service",
-    successCriteria: [
-      "End-to-end behavior verified across component boundaries",
-      "Partial-failure paths (disconnect, retry, backpressure) behave correctly",
-    ],
     criteria: [
       {
         code: "verified-across-boundaries",
@@ -1106,10 +941,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "design",
     assuranceClass: "C",
     performanceObject: "reusable network-I/O abstraction",
-    successCriteria: [
-      "Abstraction adopted by multiple production systems",
-      "Correctness validated across adopters over time",
-    ],
     criteria: [
       {
         code: "adopted-by-multiple-systems",
@@ -1134,10 +965,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "establish",
     assuranceClass: "C",
     performanceObject: "organizational network-protocol practice",
-    successCriteria: [
-      "Practice adopted across multiple teams",
-      "Measurable defect reduction over time attributable to the practice",
-    ],
     criteria: [
       {
         code: "adopted-across-teams",
@@ -1165,10 +992,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "mutable slice handling",
-    successCriteria: [
-      "Sub-slices are bounded by valid counts",
-      "Code compiles without fighting the borrow checker via unnecessary clones",
-    ],
     criteria: [
       {
         code: "bounded-by-valid-counts",
@@ -1192,10 +1015,6 @@ export const objectives: ObjectiveInput[] = [
     verbCode: "implement",
     assuranceClass: "B",
     performanceObject: "Result and io::Error handling",
-    successCriteria: [
-      "Errors are propagated or handled deliberately, never unwrapped on I/O paths",
-      "Error kinds with distinct handling requirements are distinguished",
-    ],
     criteria: [
       {
         code: "deliberate-error-handling",

@@ -158,7 +158,6 @@ export const taskObjectiveEvidenceSpec = assessmentSchema.table(
     minimumIndependence: smallint("minimum_independence").notNull(),
     minimumTransfer: transferLevelEnum("minimum_transfer").notNull(),
     rubricRevisionId: uuid("rubric_revision_id").references(() => rubricRevision.id),
-    directEvidenceRequired: boolean("direct_evidence_required").notNull().default(false),
     proxyPropagationAllowed: boolean("proxy_propagation_allowed").notNull().default(true),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   },
@@ -179,7 +178,6 @@ export const evidenceSpecObservable = assessmentSchema.table(
     code: text("code").notNull(),
     statement: text("statement").notNull(),
     observableType: text("observable_type").notNull(),
-    critical: boolean("critical").notNull().default(false),
     sortOrder: integer("sort_order"),
   },
   (t) => [

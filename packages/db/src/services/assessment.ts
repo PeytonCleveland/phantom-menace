@@ -104,7 +104,6 @@ export async function createTask(
           evidenceStrength: spec.evidenceStrength,
           minimumIndependence: spec.minimumIndependence,
           minimumTransfer: spec.minimumTransfer,
-          directEvidenceRequired: spec.directEvidenceRequired ?? false,
           proxyPropagationAllowed: spec.proxyPropagationAllowed ?? true,
         })
         .returning({ id: s.taskObjectiveEvidenceSpec.id });
@@ -119,7 +118,6 @@ export async function createTask(
             code: observable.code,
             statement: observable.statement,
             observableType: observable.observableType,
-            critical: observable.critical,
             sortOrder: index,
           })
           .returning({ id: s.evidenceSpecObservable.id });

@@ -8,8 +8,8 @@ import * as s from "../schema/index";
  * Observations are append-only (DB-enforced). Propagation runs only from
  * successful direct-origin observations, through SME-approved automatic
  * implication rules, gated on required objective criteria and critical-error
- * criteria, and never recurses from proxy evidence unless the rule is
- * explicitly transitive.
+ * criteria. Proxy evidence never propagates further — each implication is a
+ * single hop; a multi-hop chain must be authored as its own rule.
  */
 
 export interface ObservableResultInput {
@@ -164,7 +164,6 @@ export async function summarizeCriterionOutcomes(
 export async function propagateFromObservation(
   db: Database,
   observationId: string,
-  options?: { fromProxy?: boolean },
 ): Promise<PropagationResult> {
   const result: PropagationResult = { createdProxyObservationIds: [], skipped: [] };
 
@@ -180,9 +179,10 @@ export async function propagateFromObservation(
   // Only successful, active observations propagate.
   if (observation.status !== "active" || observation.result !== "successful") return result;
 
-  // §14.5: proxy evidence does not recursively propagate unless invoked
-  // explicitly for a transitive rule.
-  if (observation.origin === "proxy" && !options?.fromProxy) return result;
+  // Proxy evidence never propagates further. Explicit one-hop implications
+  // only: an L4 task establishing L3 by proxy does not thereby establish L2.
+  // If it genuinely can, author the L4 -> L2 rule.
+  if (observation.origin === "proxy") return result;
 
   // §14.4d: task policy must allow proxy propagation.
   if (observation.proxy_propagation_allowed === false) {
@@ -327,13 +327,6 @@ export async function propagateFromObservation(
       SELECT ${proxy.id}, dimension_code, context_value_id
       FROM evidence.observation_context WHERE observation_id = ${observationId}
     `);
-
-    // §14.5: recurse only when the rule is explicitly transitive.
-    if (rule.transitive === true) {
-      const nested = await propagateFromObservation(db, proxy.id, { fromProxy: true });
-      result.createdProxyObservationIds.push(...nested.createdProxyObservationIds);
-      result.skipped.push(...nested.skipped);
-    }
   }
 
   return result;

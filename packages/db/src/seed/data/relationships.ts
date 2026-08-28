@@ -120,13 +120,6 @@ export const evidenceImplications: EvidenceImplicationInput[] = [
     implicationType: "fully_subsumes",
     derivedEvidenceStrength: "direct",
     maximumTargetState: "demonstrated",
-    requiredObservableCodes: [
-      "buffer-preservation",
-      "multiple-frames",
-      "partial-header",
-      "partial-body",
-      "data-integrity",
-    ],
     requiredCriterionCodes: [
       "preserve-incomplete-data",
       "multiple-frames-per-read",
@@ -152,7 +145,6 @@ export const evidenceImplications: EvidenceImplicationInput[] = [
     implicationType: "fully_subsumes",
     derivedEvidenceStrength: "direct",
     maximumTargetState: "demonstrated",
-    requiredObservableCodes: ["framing-diagnosis"],
     requiredCriterionCodes: ["discriminates-async-mechanisms", "rules-out-competing-explanations"],
     automatic: true,
     rationale:

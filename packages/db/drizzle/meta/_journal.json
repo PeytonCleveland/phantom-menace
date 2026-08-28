@@ -43,6 +43,13 @@
       "when": 1787951671819,
       "tag": "0005_objective_criteria",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787955658020,
+      "tag": "0006_evidence_semantics_contract",
+      "breakpoints": true
     }
   ]
 }

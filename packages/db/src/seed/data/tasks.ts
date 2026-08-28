@@ -10,7 +10,6 @@ export interface ObservableSeed {
   code: string;
   statement: string;
   observableType: "behavior" | "product" | "outcome" | "process" | "explanation" | "judgment";
-  critical: boolean;
   criterionCodes?: string[];
 }
 
@@ -20,7 +19,6 @@ export interface EvidenceSpecSeed {
   evidenceStrength: "direct" | "supporting" | "incidental";
   minimumIndependence: 0 | 1 | 2 | 3 | 4;
   minimumTransfer: "same" | "near" | "far" | "integrated";
-  directEvidenceRequired?: boolean;
   proxyPropagationAllowed?: boolean;
   observables?: ObservableSeed[];
 }
@@ -76,70 +74,60 @@ export const rustFramingChallenge: TaskSeed = {
       evidenceStrength: "direct",
       minimumIndependence: 3,
       minimumTransfer: "near",
-      directEvidenceRequired: true,
       proxyPropagationAllowed: true,
       observables: [
         {
           code: "framing-model",
           statement: "Recognizes that TCP is a byte stream without message boundaries.",
           observableType: "explanation",
-          critical: false,
           criterionCodes: [],
         },
         {
           code: "buffer-preservation",
           statement: "Preserves incomplete bytes across reads.",
           observableType: "product",
-          critical: true,
           criterionCodes: ["preserve-incomplete-data"],
         },
         {
           code: "multiple-frames",
           statement: "Processes multiple complete frames from one read.",
           observableType: "product",
-          critical: true,
           criterionCodes: ["multiple-frames-per-read"],
         },
         {
           code: "partial-header",
           statement: "Handles a frame header split across reads.",
           observableType: "product",
-          critical: true,
           criterionCodes: ["split-header-and-body"],
         },
         {
           code: "partial-body",
           statement: "Handles a frame body split across reads.",
           observableType: "product",
-          critical: true,
           criterionCodes: ["split-header-and-body"],
         },
         {
           code: "eof",
           statement: "Handles EOF according to protocol state.",
           observableType: "product",
-          critical: false,
           criterionCodes: ["eof-and-io-errors"],
         },
         {
           code: "io-error",
           statement: "Surfaces or handles I/O errors appropriately.",
           observableType: "product",
-          critical: false,
           criterionCodes: ["eof-and-io-errors"],
         },
         {
           code: "verification",
           statement: "Adds or uses tests covering varied read boundaries.",
           observableType: "process",
-          critical: false,
           criterionCodes: ["boundary-verification"],
         },
         {
           code: "data-integrity",
           statement: "Does not lose, duplicate, or reorder bytes.",
           observableType: "outcome",
-          critical: true,
           criterionCodes: ["no-data-loss"],
         },
       ],

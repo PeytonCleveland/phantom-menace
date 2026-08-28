@@ -232,8 +232,6 @@ export const learningObjectiveRevision = catalogSchema.table(
     assuranceClass: char("assurance_class", { length: 1 }).notNull(),
     performanceObject: text("performance_object").notNull().default(""),
     conditions: jsonb("conditions").notNull().default(sql`'{}'::jsonb`),
-    successCriteria: jsonb("success_criteria").notNull().default(sql`'[]'::jsonb`),
-    criticalErrors: jsonb("critical_errors").notNull().default(sql`'[]'::jsonb`),
     performanceModes: text("performance_modes").array().notNull().default(sql`ARRAY[]::text[]`),
     tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
@@ -493,12 +491,7 @@ export const objectiveEvidenceImplication = catalogSchema.table(
     implicationType: evidenceImplicationTypeEnum("implication_type").notNull(),
     derivedEvidenceStrength: evidenceStrengthEnum("derived_evidence_strength").notNull(),
     maximumTargetState: assertionStateEnum("maximum_target_state").notNull(),
-    requiredObservableCodes: text("required_observable_codes")
-      .array()
-      .notNull()
-      .default(sql`ARRAY[]::text[]`),
     automatic: boolean("automatic").notNull().default(false),
-    transitive: boolean("transitive").notNull().default(false),
     rationale: text("rationale").notNull(),
     validationStatus: validationStatusEnum("validation_status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

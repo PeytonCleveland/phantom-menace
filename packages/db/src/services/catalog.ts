@@ -44,8 +44,6 @@ export interface ObjectiveInput {
   assuranceClass: "A" | "B" | "C";
   performanceObject?: string;
   conditions?: Record<string, unknown>;
-  successCriteria: string[];
-  criticalErrors?: string[];
   tags?: string[];
   /** Canonical code of the primary competency. */
   primaryCompetencyCode: string;
@@ -78,10 +76,8 @@ export interface EvidenceImplicationInput {
   implicationType: (typeof s.evidenceImplicationTypeEnum.enumValues)[number];
   derivedEvidenceStrength: (typeof s.evidenceStrengthEnum.enumValues)[number];
   maximumTargetState: "developing" | "demonstrated";
-  requiredObservableCodes?: string[];
   requiredCriterionCodes?: string[];
   automatic?: boolean;
-  transitive?: boolean;
   rationale: string;
   validationStatus?: (typeof s.validationStatusEnum.enumValues)[number];
 }
@@ -199,8 +195,6 @@ export class CatalogSession {
           assuranceClass: input.assuranceClass,
           performanceObject: input.performanceObject ?? "",
           conditions: input.conditions ?? {},
-          successCriteria: input.successCriteria,
-          criticalErrors: input.criticalErrors ?? [],
           tags: input.tags ?? [],
         })
         .returning({ id: s.learningObjectiveRevision.id });
@@ -277,9 +271,7 @@ export class CatalogSession {
         implicationType: input.implicationType,
         derivedEvidenceStrength: input.derivedEvidenceStrength,
         maximumTargetState: input.maximumTargetState,
-        requiredObservableCodes: input.requiredObservableCodes ?? [],
         automatic: input.automatic ?? false,
-        transitive: input.transitive ?? false,
         rationale: input.rationale,
         validationStatus: input.validationStatus ?? "approved",
       })

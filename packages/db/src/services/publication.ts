@@ -123,32 +123,35 @@ export async function validateRelease(
     errors.push(`evidence implication ${row.id} has an endpoint outside this release`);
   }
 
-  // §13.2 published objectives must be complete (≥1 success criterion)
+  // §13.2 published objectives must be complete (title and statement)
   const incompleteObjectives = await db.execute(sql`
     SELECT lo.canonical_code
     FROM catalog.framework_release_objective fro
     JOIN catalog.learning_objective_revision lor ON lor.id = fro.objective_revision_id
     JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
     WHERE fro.framework_release_id = ${frameworkReleaseId}
-      AND (
-        lor.title = '' OR lor.statement = ''
-        OR jsonb_array_length(lor.success_criteria) = 0
-      )
+      AND (lor.title = '' OR lor.statement = '')
   `);
   for (const row of incompleteObjectives.rows) {
-    errors.push(`objective ${row.canonical_code} is missing title, statement, or success criteria`);
+    errors.push(`objective ${row.canonical_code} is missing title or statement`);
   }
 
-  // §13.3 fully_subsumes requires rationale and required observables
+  // §13.3 fully_subsumes requires rationale and at least one required criterion.
   const badSubsumes = await db.execute(sql`
     SELECT i.id
     FROM catalog.objective_evidence_implication i
     WHERE i.framework_release_id = ${frameworkReleaseId}
       AND i.implication_type = 'fully_subsumes'
-      AND (i.rationale = '' OR cardinality(i.required_observable_codes) = 0)
+      AND (
+        i.rationale = ''
+        OR NOT EXISTS (
+          SELECT 1 FROM catalog.objective_evidence_implication_criterion ic
+          WHERE ic.implication_id = i.id
+        )
+      )
   `);
   for (const row of badSubsumes.rows) {
-    errors.push(`fully_subsumes implication ${row.id} lacks rationale or required observables`);
+    errors.push(`fully_subsumes implication ${row.id} lacks rationale or required criteria`);
   }
 
   // §13.2 Class B/C objectives should have an evidence contract (task mapping).
