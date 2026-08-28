@@ -63,7 +63,14 @@ async function main(): Promise<void> {
       machineVerified: true,
       details: { source: "adaptive knowledge check" },
     });
-    await recalculateForObservations(db, [knowledgeCheck]);
+    const knowledgeCheckRecalc = await recalculateForObservations(db, [knowledgeCheck]);
+    const knowledgeCheckSkipped = [...knowledgeCheckRecalc.values()].reduce(
+      (sum, r) => sum + r.diagnostics.skippedIncompleteContext,
+      0,
+    );
+    console.log(
+      `   observations skipped for incomplete required context: ${knowledgeCheckSkipped}`,
+    );
 
     const mid = await computeFrontier(db, learner.id, ctx.roleLevelRevisionId);
     const newlyUnlocked = mid.available.filter((e) => !beforeAvailable.has(e.canonicalCode));
@@ -143,7 +150,7 @@ async function main(): Promise<void> {
     }
 
     // Recalculate all affected assertions.
-    const outcomes = await recalculateForObservations(db, [
+    const recalculation = await recalculateForObservations(db, [
       directEvidence,
       ...supportingIds,
       ...propagation.createdProxyObservationIds,
@@ -156,11 +163,16 @@ async function main(): Promise<void> {
       "NET-TCP-L1-003",
       "NET-TCP-L1-004",
     ]) {
-      const outcome = outcomes.get(ctx.objective(code))?.[0];
+      const outcome = recalculation.get(ctx.objective(code))?.outcomes[0];
       if (outcome) {
         console.log(`   ${code}: ${outcome.state} (confidence ${outcome.confidence.toFixed(2)})`);
       }
     }
+    const recalculationSkipped = [...recalculation.values()].reduce(
+      (sum, r) => sum + r.diagnostics.skippedIncompleteContext,
+      0,
+    );
+    console.log(`   observations skipped for incomplete required context: ${recalculationSkipped}`);
 
     // ── Step 10: evidence lineage (§15.7) ─────────────────────────────────
     console.log("\n── §25.10 Why is RUST-NET-L2-003 demonstrated? (§15.7 lineage)");

@@ -18,6 +18,18 @@ export async function releaseId(db: Database): Promise<string> {
   return id;
 }
 
+export async function seRoleLevelRevisionId(db: Database): Promise<string> {
+  const result = await db.execute(sql`
+    SELECT rlr.id FROM qualification.role_level_revision rlr
+    JOIN qualification.role_level rl ON rl.id = rlr.role_level_id
+    JOIN qualification.role r ON r.id = rl.role_id
+    WHERE r.canonical_code = 'software-engineer' AND rl.level = 3 AND rlr.status = 'published'
+  `);
+  const id = result.rows[0]?.id;
+  if (typeof id !== "string") throw new Error("published SE L3 role level revision not found");
+  return id;
+}
+
 export async function objectiveId(db: Database, canonicalCode: string): Promise<string> {
   const result = await db.execute(sql`
     SELECT lor.id

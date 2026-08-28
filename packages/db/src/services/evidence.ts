@@ -232,6 +232,16 @@ export async function propagateFromObservation(
   // task whose observables don't cover a critical-error criterion of its own
   // objective must not let that criterion's silence read as success, so
   // missing measurement blocks propagation exactly like a triggered one.
+  //
+  // Consequence, stated plainly because it is easy to trip over: propagation
+  // requires an evidence spec. `outcomes.observed` can only contain a
+  // criterion id that has a mapped, recorded observable result — so an
+  // observation with no evidence spec at all (adaptive knowledge checks
+  // record this way) always has `observed` empty, and therefore a
+  // spec-less observation can never propagate as long as its source
+  // objective has at least one critical_error criterion. This is deliberate,
+  // not incidental — but it is exactly what silently ended propagation for
+  // RUST-NET-L3-003 -> NET-TCP-L1-003 once this gate landed.
   const criticalErrorCriteria = await db.execute(sql`
     SELECT id, code FROM catalog.objective_criterion
     WHERE objective_revision_id = ${observation.objective_revision_id} AND kind = 'critical_error'

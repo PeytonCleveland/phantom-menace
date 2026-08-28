@@ -16,7 +16,7 @@ import {
   objectiveRelationships,
 } from "./data/relationships";
 import { capabilitySets, softwareEngineerL3Composition, softwareEngineerRole } from "./data/roles";
-import { rustFramingChallenge } from "./data/tasks";
+import { rustAsyncDiagnosis, rustFramingChallenge } from "./data/tasks";
 import { verbs } from "./data/verbs";
 
 const FRAMEWORK_CODE = "SWE";
@@ -108,6 +108,16 @@ async function main(): Promise<void> {
     console.log(
       `   ${rustFramingChallenge.code}: ${task.evidenceSpecIdByObjectiveCode.size} evidence specs, ` +
         `${task.variantIdByCode.size} variants, ${task.administrationIdByMode.size} administrations`,
+    );
+    const asyncTask = await createTask(
+      db,
+      releaseId,
+      rustAsyncDiagnosis,
+      session.criterionIdByCode,
+    );
+    console.log(
+      `   ${rustAsyncDiagnosis.code}: ${asyncTask.evidenceSpecIdByObjectiveCode.size} evidence specs, ` +
+        `${asyncTask.variantIdByCode.size} variants, ${asyncTask.administrationIdByMode.size} administrations`,
     );
 
     console.log("── Capability sets (§20)");

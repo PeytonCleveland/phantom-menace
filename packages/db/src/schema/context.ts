@@ -58,6 +58,9 @@ export const contextValue = catalogSchema.table(
   },
   (t) => [
     unique("uq_context_value_code").on(t.dimensionCode, t.code),
+    // Lets other tables take a composite FK on (context_value_id, dimension_code)
+    // so a row cannot claim dimension X while pointing at a value of dimension Y.
+    unique("uq_context_value_id_dimension").on(t.id, t.dimensionCode),
     check("ck_context_value_no_self_parent", sql`parent_value_id IS NULL OR parent_value_id <> id`),
     check("ck_context_value_code_format", CODE_FORMAT_CHECK),
   ],

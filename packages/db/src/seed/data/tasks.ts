@@ -193,3 +193,89 @@ export const rustFramingChallenge: TaskSeed = {
     },
   ],
 };
+
+/**
+ * Direct evidence contract for RUST-NET-L4-001 (spec §25 review, Task 14
+ * step 6): the only propagation test coverage in this repo was refusal
+ * coverage — nothing asserted that a `fully_subsumes` rule CAN propagate.
+ * This task exists to exercise the RUST-NET-L4-001 -> RUST-NET-L3-003
+ * positive path end to end, so its observables cover every criterion of
+ * RUST-NET-L4-001, including the critical_error `no-unverified-attribution`.
+ */
+export const rustAsyncDiagnosis: TaskSeed = {
+  code: "TASK-RUST-ASYNC-DIAGNOSIS-01",
+  title: "Diagnose a Cancellation/Framing Interaction Under Load",
+  taskKind: "challenge",
+  scenario:
+    "An unfamiliar async Rust service intermittently corrupts framed messages only under load, with symptoms consistent with several plausible causes: cancellation racing a partial read, timeout-driven retry, or backpressure-induced buffer reuse. Diagnose the actual mechanism and verify the fix under realistic load.",
+  instructions:
+    "Reproduce or statistically characterize the failure. Discriminate among the candidate async mechanisms and rule out the ones that do not hold. Verify the correction under realistic load. Do not attribute the failure to a mechanism you have not verified.",
+  designEvidenceCeiling: 4,
+  estimatedMinutes: 180,
+  variants: [
+    {
+      code: "baseline",
+      transferDistanceDefault: "near",
+      performanceScopeDefault: "composite",
+      variantConfig: {
+        repository: "async-framing-service-a",
+        faultProfile: "cancel-race-corruption",
+      },
+    },
+  ],
+  evidenceSpecs: [
+    {
+      objectiveCode: "RUST-NET-L4-001",
+      claimRole: "primary",
+      evidenceStrength: "direct",
+      minimumIndependence: 3,
+      minimumTransferDistance: "near",
+      minimumPerformanceScope: "composite",
+      proxyPropagationAllowed: true,
+      observables: [
+        {
+          code: "mechanism-discrimination",
+          statement: "Discriminates among the interacting candidate async failure mechanisms.",
+          observableType: "explanation",
+          criterionCodes: ["discriminates-async-mechanisms"],
+        },
+        {
+          code: "competing-explanations-ruled-out",
+          statement: "Rules out plausible competing explanations with evidence.",
+          observableType: "explanation",
+          criterionCodes: ["rules-out-competing-explanations"],
+        },
+        {
+          code: "load-verification",
+          statement: "Verifies the conclusion and correction under realistic load.",
+          observableType: "outcome",
+          criterionCodes: ["verified-under-realistic-load"],
+        },
+        {
+          code: "attribution-check",
+          statement: "Does not attribute the failure to a mechanism that was not verified.",
+          observableType: "judgment",
+          criterionCodes: ["no-unverified-attribution"],
+        },
+      ],
+    },
+  ],
+  administrations: [
+    {
+      variantCode: "baseline",
+      mode: "qualification",
+      assistancePolicy: {
+        documentation: true,
+        hints: false,
+        generalAi: false,
+        unfamiliarRepository: true,
+        hiddenBoundaryTests: true,
+        minimumIndependence: 3,
+        minimumTransferDistance: "near",
+        minimumPerformanceScope: "composite",
+      },
+      processCaptureEnabled: true,
+      effectiveEvidenceCeiling: 4,
+    },
+  ],
+};

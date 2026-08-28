@@ -87,16 +87,23 @@ export async function checkObjectiveSatisfaction(
   // when `arr` is empty (`()::text[]` is a syntax error). ARRAY[]::text[] is
   // valid and denotes "no pinned dimensions" correctly.
   const pinnedContexts = policy.contexts.filter((c) => c.valueCode !== null);
-  const assertionsResult = await db.execute(sql`
+
+  // Extracted so the SAME `pinned` closure (identical recursion, never
+  // duplicated) can be prefixed onto every statement below that needs it:
+  // the assertion scan, the breadth count (step 3), and the observation scan
+  // (step 2). `pinnedDimensions` is likewise reused everywhere a "does this
+  // row carry every pinned dimension" check is needed.
+  const pinnedDimensions = sql`ARRAY[${sql.join(
+    pinnedContexts.map((c) => sql`${c.dimensionCode}`),
+    sql`, `,
+  )}]::text[]`;
+  const pinnedCte = sql`
     WITH RECURSIVE pinned AS (
       SELECT cv.id, cv.dimension_code
       FROM catalog.context_value cv
       WHERE (cv.dimension_code, cv.code) IN (
         SELECT * FROM unnest(
-          ARRAY[${sql.join(
-            pinnedContexts.map((c) => sql`${c.dimensionCode}`),
-            sql`, `,
-          )}]::text[],
+          ${pinnedDimensions},
           ARRAY[${sql.join(
             pinnedContexts.map((c) => sql`${c.valueCode as string}`),
             sql`, `,
@@ -108,18 +115,17 @@ export async function checkObjectiveSatisfaction(
       FROM catalog.context_value child
       JOIN pinned ON child.parent_value_id = pinned.id
     )
+  `;
+
+  const assertionsResult = await db.execute(sql`
+    ${pinnedCte}
     SELECT a.id, a.state, a.context_key
     FROM learner.objective_assertion a
     WHERE a.learner_id = ${learnerId}
       AND a.objective_revision_id = ${objectiveRevisionId}
       AND NOT EXISTS (
         -- every pinned dimension must be matched by this assertion
-        SELECT 1 FROM unnest(
-          ARRAY[${sql.join(
-            pinnedContexts.map((c) => sql`${c.dimensionCode}`),
-            sql`, `,
-          )}]::text[]
-        ) AS required(dimension_code)
+        SELECT 1 FROM unnest(${pinnedDimensions}) AS required(dimension_code)
         WHERE NOT EXISTS (
           SELECT 1 FROM learner.objective_assertion_context ac
           JOIN pinned ON pinned.id = ac.context_value_id
@@ -140,10 +146,15 @@ export async function checkObjectiveSatisfaction(
     };
   }
 
-  // Breadth: count distinct qualifying values on each dimension that demands it.
+  // Breadth: count distinct qualifying values on each dimension that demands
+  // it, restricted to assertions that ALSO satisfy every other pinned
+  // dimension of this requirement — otherwise a requirement pinning
+  // cloud_provider=aws and demanding breadth >= 2 on deployment_env would
+  // count deployment_env values from assertions that fail the aws pin.
   for (const requirement of policy.contexts) {
     if (requirement.minimumDistinctValues <= 1) continue;
     const distinct = await db.execute(sql`
+      ${pinnedCte}
       SELECT count(DISTINCT ac.context_value_id) AS n
       FROM learner.objective_assertion a
       JOIN learner.objective_assertion_context ac ON ac.assertion_id = a.id
@@ -151,6 +162,14 @@ export async function checkObjectiveSatisfaction(
         AND a.objective_revision_id = ${objectiveRevisionId}
         AND a.state = 'demonstrated'
         AND ac.dimension_code = ${requirement.dimensionCode}
+        AND NOT EXISTS (
+          SELECT 1 FROM unnest(${pinnedDimensions}) AS required(dimension_code)
+          WHERE NOT EXISTS (
+            SELECT 1 FROM learner.objective_assertion_context pin_ac
+            JOIN pinned ON pinned.id = pin_ac.context_value_id
+            WHERE pin_ac.assertion_id = a.id AND pin_ac.dimension_code = required.dimension_code
+          )
+        )
     `);
     if (Number(distinct.rows[0]?.n ?? 0) < requirement.minimumDistinctValues) {
       return {
@@ -161,17 +180,33 @@ export async function checkObjectiveSatisfaction(
     }
   }
 
+  // Filter the observation scan through the SAME pinned closure as the
+  // assertion check. Without this, a weak in-context assertion plus a strong
+  // OUT-of-context observation would pass the policy gate on evidence from
+  // the wrong context — the assertion-level context check only establishes
+  // that some in-context assertion is demonstrated; it says nothing about
+  // which observations the quality checks below (independence, transfer,
+  // scope, age) are allowed to look at.
   const observations = await db.execute(sql`
-    SELECT origin, independence_level, transfer_distance, performance_scope, observed_at
-    FROM evidence.observation
-    WHERE learner_id = ${learnerId}
-      AND objective_revision_id = ${objectiveRevisionId}
-      AND status = 'active'
-      AND result = 'successful'
-      AND evidence_strength = 'direct'
+    ${pinnedCte}
+    SELECT o.origin, o.independence_level, o.transfer_distance, o.performance_scope, o.observed_at
+    FROM evidence.observation o
+    WHERE o.learner_id = ${learnerId}
+      AND o.objective_revision_id = ${objectiveRevisionId}
+      AND o.status = 'active'
+      AND o.result = 'successful'
+      AND o.evidence_strength = 'direct'
       AND (${policy.maximumEvidenceAge}::interval IS NULL
-           OR observed_at >= now() - ${policy.maximumEvidenceAge}::interval)
-    ORDER BY origin ASC -- 'direct' sorts before 'proxy'
+           OR o.observed_at >= now() - ${policy.maximumEvidenceAge}::interval)
+      AND NOT EXISTS (
+        SELECT 1 FROM unnest(${pinnedDimensions}) AS required(dimension_code)
+        WHERE NOT EXISTS (
+          SELECT 1 FROM evidence.observation_context oc
+          JOIN pinned ON pinned.id = oc.context_value_id
+          WHERE oc.observation_id = o.id AND oc.dimension_code = required.dimension_code
+        )
+      )
+    ORDER BY o.origin ASC -- 'direct' sorts before 'proxy'
   `);
 
   const requireDirectOrigin = policy.directEvidenceRequired || !policy.proxyEvidenceAllowed;

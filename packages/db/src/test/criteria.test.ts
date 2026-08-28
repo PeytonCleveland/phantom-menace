@@ -218,6 +218,67 @@ test("a fully_subsumes rule with no required criteria refuses to propagate", asy
   }
 });
 
+test("a fully_subsumes rule propagates when every required criterion is established", async () => {
+  // Every other propagation test in this file is a refusal test. This is the
+  // positive path: RUST-NET-L4-001 -> RUST-NET-L3-003 propagates when its
+  // task evidence spec measures every criterion (including the critical_error
+  // no-unverified-attribution) and all of them succeed.
+  const learnerId = await createLearner(db, "positive-propagation");
+  const observationId = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: await objectiveId(db, "RUST-NET-L4-001"),
+    evidenceSpecId: await specIdFor("RUST-NET-L4-001"),
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 3,
+    transferDistance: "near",
+    performanceScope: "composite",
+    observableResults: [
+      { code: "mechanism-discrimination", result: "successful" },
+      { code: "competing-explanations-ruled-out", result: "successful" },
+      { code: "load-verification", result: "successful" },
+      { code: "attribution-check", result: "successful" },
+    ],
+  });
+
+  const propagation = await propagateFromObservation(db, observationId);
+  expect(propagation.createdProxyObservationIds).toHaveLength(1);
+
+  const [proxyId] = propagation.createdProxyObservationIds;
+  const proxyRow = await db.execute(sql`
+    SELECT o.origin, o.evidence_strength, lo.canonical_code
+    FROM evidence.observation o
+    JOIN catalog.learning_objective_revision lor ON lor.id = o.objective_revision_id
+    JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+    WHERE o.id = ${proxyId}
+  `);
+  expect(proxyRow.rows[0]?.canonical_code).toBe("RUST-NET-L3-003");
+  expect(proxyRow.rows[0]?.origin).toBe("proxy");
+  expect(proxyRow.rows[0]?.evidence_strength).toBe("direct");
+});
+
+test("a spec-less observation never propagates (unmeasured critical error blocks it)", async () => {
+  // Adaptive knowledge checks record with no evidence spec at all, so
+  // `observed` is always empty for them. That silently ended propagation for
+  // RUST-NET-L3-003 -> NET-TCP-L1-003 when the critical-error gate landed
+  // (see evidence.ts). Pin the behavior here rather than leaving it incidental.
+  const learnerId = await createLearner(db, "spec-less-guard");
+  const observationId = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: await objectiveId(db, "RUST-NET-L4-001"),
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 3,
+    transferDistance: "near",
+    performanceScope: "composite",
+    // No evidenceSpecId and no observableResults: nothing was measured.
+  });
+
+  const propagation = await propagateFromObservation(db, observationId);
+  expect(propagation.createdProxyObservationIds).toEqual([]);
+  expect(propagation.skipped.some((s) => /not measured/i.test(s.reason))).toBe(true);
+});
+
 test("every seeded fully_subsumes implication requires at least one criterion", async () => {
   const result = await db.execute(sql`
     SELECT i.id, slo.canonical_code AS source_code, tlo.canonical_code AS target_code

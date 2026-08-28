@@ -132,11 +132,19 @@ export const observationContext = evidenceSchema.table(
     dimensionCode: text("dimension_code")
       .notNull()
       .references(() => contextDimension.code),
-    contextValueId: uuid("context_value_id")
-      .notNull()
-      .references(() => contextValue.id),
+    // Composite FK below (not a plain reference to contextValue.id) so a row
+    // cannot claim dimension `cloud_provider` while pointing at a value that
+    // actually belongs to `azure_region`.
+    contextValueId: uuid("context_value_id").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.observationId, t.dimensionCode] })],
+  (t) => [
+    primaryKey({ columns: [t.observationId, t.dimensionCode] }),
+    foreignKey({
+      name: "fk_observation_context_value_dimension",
+      columns: [t.contextValueId, t.dimensionCode],
+      foreignColumns: [contextValue.id, contextValue.dimensionCode],
+    }),
+  ],
 );
 
 export const observationArtifact = evidenceSchema.table(

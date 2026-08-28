@@ -37,6 +37,21 @@ export interface AssertionOutcome {
   confidence: number;
 }
 
+export interface RecalculationDiagnostics {
+  /**
+   * Observations that were skipped because they were missing a value for at
+   * least one of the objective's REQUIRED context dimensions. Spec §1: such
+   * evidence genuinely cannot establish a properly scoped claim, and this
+   * count is what makes that disappearance visible instead of silent.
+   */
+  skippedIncompleteContext: number;
+}
+
+export interface RecalculationResult {
+  outcomes: AssertionOutcome[];
+  diagnostics: RecalculationDiagnostics;
+}
+
 /**
  * Recalculate every context-scoped assertion for one (learner, objective).
  *
@@ -52,7 +67,7 @@ export async function recalculateAssertionsForObjective(
   db: Database,
   learnerId: string,
   objectiveRevisionId: string,
-): Promise<AssertionOutcome[]> {
+): Promise<RecalculationResult> {
   const requiredResult = await db.execute(sql`
     SELECT dimension_code FROM catalog.objective_context_policy
     WHERE objective_revision_id = ${objectiveRevisionId} AND policy = 'required'
@@ -79,6 +94,7 @@ export async function recalculateAssertionsForObjective(
 
   // Bucket observations by their required-dimension tuple.
   const buckets = new Map<string, { contexts: Record<string, string>; rows: ObservationRow[] }>();
+  let skippedIncompleteContext = 0;
   for (const raw of observationsResult.rows) {
     const contexts = (raw.contexts ?? {}) as Record<string, string>;
     const scoped: Record<string, string> = {};
@@ -91,7 +107,12 @@ export async function recalculateAssertionsForObjective(
       }
       scoped[dimension] = value;
     }
-    if (!complete) continue;
+    if (!complete) {
+      // Correct per spec §1, but must not be silent — see
+      // RecalculationDiagnostics.skippedIncompleteContext.
+      skippedIncompleteContext += 1;
+      continue;
+    }
 
     const key = canonicalContextKey(scoped);
     const bucket = buckets.get(key) ?? { contexts: scoped, rows: [] };
@@ -165,7 +186,7 @@ export async function recalculateAssertionsForObjective(
     }
   });
 
-  return outcomes;
+  return { outcomes, diagnostics: { skippedIncompleteContext } };
 }
 
 function inferState(observations: ObservationRow[]): {
@@ -239,8 +260,8 @@ function inferState(observations: ObservationRow[]): {
 export async function recalculateForObservations(
   db: Database,
   observationIds: string[],
-): Promise<Map<string, AssertionOutcome[]>> {
-  const results = new Map<string, AssertionOutcome[]>();
+): Promise<Map<string, RecalculationResult>> {
+  const results = new Map<string, RecalculationResult>();
   if (observationIds.length === 0) return results;
 
   const pairs = await db
@@ -252,12 +273,12 @@ export async function recalculateForObservations(
     .where(inArray(s.observation.id, observationIds));
 
   for (const pair of pairs) {
-    const outcomes = await recalculateAssertionsForObjective(
+    const result = await recalculateAssertionsForObjective(
       db,
       pair.learnerId,
       pair.objectiveRevisionId,
     );
-    results.set(pair.objectiveRevisionId, outcomes);
+    results.set(pair.objectiveRevisionId, result);
   }
   return results;
 }

@@ -1,5 +1,14 @@
 import { sql } from "drizzle-orm";
-import { check, numeric, primaryKey, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
+import {
+  check,
+  foreignKey,
+  numeric,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from "drizzle-orm/pg-core";
 import { learningObjectiveRevision } from "./catalog";
 import { contextDimension, contextValue } from "./context";
 import { assertionStateEnum, learnerSchema } from "./enums";
@@ -45,11 +54,19 @@ export const objectiveAssertionContext = learnerSchema.table(
     dimensionCode: text("dimension_code")
       .notNull()
       .references(() => contextDimension.code),
-    contextValueId: uuid("context_value_id")
-      .notNull()
-      .references(() => contextValue.id),
+    // Composite FK below (not a plain reference to contextValue.id) so a row
+    // cannot claim dimension `cloud_provider` while pointing at a value that
+    // actually belongs to `azure_region`.
+    contextValueId: uuid("context_value_id").notNull(),
   },
-  (t) => [primaryKey({ columns: [t.assertionId, t.dimensionCode] })],
+  (t) => [
+    primaryKey({ columns: [t.assertionId, t.dimensionCode] }),
+    foreignKey({
+      name: "fk_objective_assertion_context_value_dimension",
+      columns: [t.contextValueId, t.dimensionCode],
+      foreignColumns: [contextValue.id, contextValue.dimensionCode],
+    }),
+  ],
 );
 
 export const assertionEvidence = learnerSchema.table(

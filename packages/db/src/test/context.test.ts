@@ -120,9 +120,9 @@ test("an objective with no required dimensions keys its assertion to the empty s
     transferDistance: "near",
     performanceScope: "focused",
   });
-  const outcomes = await recalculateForObservations(db, [observationId]);
+  const results = await recalculateForObservations(db, [observationId]);
 
-  const forObjective = outcomes.get(target);
+  const forObjective = results.get(target)?.outcomes;
   expect(forObjective).toHaveLength(1);
   expect(forObjective?.[0]?.contextKey).toBe("");
   expect(forObjective?.[0]?.state).toBe("demonstrated");
