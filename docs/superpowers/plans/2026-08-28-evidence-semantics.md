@@ -3316,6 +3316,21 @@ The baseline lives in the session scratchpad; if lost, regenerate it from `git s
 - `RUST-NET-L2-003: demonstrated (confidence 0.85)`
 - `RUST-NET-L2-003 with direct required: satisfied=false`
 
+- [ ] **Step 2b: Document the fresh-database-only assumption**
+
+Two migrations in this pass are safe only because `db:reset` always rebuilds from empty,
+and that assumption currently lives nowhere in the repo — only in review artifacts:
+
+- `0003`'s `assertion_evidence` restructure does `ADD COLUMN assertion_id uuid NOT NULL`
+  with no default, which fails against any populated table.
+- `0008` emits the `evidence_ceiling` → `design_evidence_ceiling` rename as drop+add rather
+  than `RENAME COLUMN` (drizzle-kit's interactive rename prompt cannot be answered
+  non-interactively), which destroys the column's data outright.
+
+Add a short `packages/db/drizzle/README.md` recording that migrations in this pass assume a
+fresh database, naming these two specifically, so nobody runs them against a real
+environment and silently loses a column.
+
 - [ ] **Step 3: Mark the spec implemented**
 
 Change the spec's `Status:` line to `implemented 2026-08-28`.
