@@ -16,7 +16,9 @@
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
     "db:generate": "turbo run db:generate",
-    "db:migrate": "turbo run db:migrate"
+    "db:migrate": "turbo run db:migrate",
+    "db:seed": "pnpm --filter @lighthouse/db db:seed",
+    "db:reset": "docker compose down -v && docker compose up -d db --wait && pnpm --filter @lighthouse/db db:migrate && pnpm --filter @lighthouse/db db:seed"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.11",

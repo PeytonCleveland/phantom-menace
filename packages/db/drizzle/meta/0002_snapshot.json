@@ -1,0 +1,5707 @@
+{
+  "id": "7efef10c-3a93-493b-ad2c-9923d0b9feeb",
+  "prevId": "fe3ca832-032e-40ad-95c8-87001c0b8453",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "learner.assertion_evidence": {
+      "name": "assertion_evidence",
+      "schema": "learner",
+      "columns": {
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_observation_id": {
+          "name": "evidence_observation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contribution_weight": {
+          "name": "contribution_weight",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'1'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "assertion_evidence_evidence_observation_id_observation_id_fk": {
+          "name": "assertion_evidence_evidence_observation_id_observation_id_fk",
+          "tableFrom": "assertion_evidence",
+          "tableTo": "observation",
+          "schemaTo": "evidence",
+          "columnsFrom": [
+            "evidence_observation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_assertion_evidence_assertion": {
+          "name": "fk_assertion_evidence_assertion",
+          "tableFrom": "assertion_evidence",
+          "tableTo": "objective_assertion",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id",
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "learner_id",
+            "objective_revision_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "assertion_evidence_learner_id_objective_revision_id_evidence_observation_id_pk": {
+          "name": "assertion_evidence_learner_id_objective_revision_id_evidence_observation_id_pk",
+          "columns": [
+            "learner_id",
+            "objective_revision_id",
+            "evidence_observation_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_assertion_evidence_weight": {
+          "name": "ck_assertion_evidence_weight",
+          "value": "contribution_weight BETWEEN 0 AND 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "learner.objective_assertion": {
+      "name": "objective_assertion",
+      "schema": "learner",
+      "columns": {
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "assertion_state",
+          "typeSchema": "learner",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_direct_evidence_at": {
+          "name": "last_direct_evidence_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_any_evidence_at": {
+          "name": "last_any_evidence_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "inference_model_version": {
+          "name": "inference_model_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calculated_at": {
+          "name": "calculated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_assertion_learner_id_profile_id_fk": {
+          "name": "objective_assertion_learner_id_profile_id_fk",
+          "tableFrom": "objective_assertion",
+          "tableTo": "profile",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_assertion_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_assertion_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_assertion",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_assertion_learner_id_objective_revision_id_pk": {
+          "name": "objective_assertion_learner_id_objective_revision_id_pk",
+          "columns": [
+            "learner_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_assertion_confidence": {
+          "name": "ck_assertion_confidence",
+          "value": "confidence BETWEEN 0 AND 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.evidence_spec_observable": {
+      "name": "evidence_spec_observable",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "evidence_spec_id": {
+          "name": "evidence_spec_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "statement": {
+          "name": "statement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observable_type": {
+          "name": "observable_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "critical": {
+          "name": "critical",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "evidence_spec_observable_evidence_spec_id_task_objective_evidence_spec_id_fk": {
+          "name": "evidence_spec_observable_evidence_spec_id_task_objective_evidence_spec_id_fk",
+          "tableFrom": "evidence_spec_observable",
+          "tableTo": "task_objective_evidence_spec",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "evidence_spec_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_evidence_spec_observable_code": {
+          "name": "uq_evidence_spec_observable_code",
+          "nullsNotDistinct": false,
+          "columns": [
+            "evidence_spec_id",
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_observable_type": {
+          "name": "ck_observable_type",
+          "value": "observable_type IN ('behavior', 'product', 'outcome', 'process', 'explanation', 'judgment')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.learner_attempt": {
+      "name": "learner_attempt",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "task_administration_id": {
+          "name": "task_administration_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "started_at": {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "completed_at": {
+          "name": "completed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempt_status": {
+          "name": "attempt_status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "result_summary": {
+          "name": "result_summary",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {
+        "ix_attempt_learner_started": {
+          "name": "ix_attempt_learner_started",
+          "columns": [
+            {
+              "expression": "learner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "started_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "learner_attempt_learner_id_profile_id_fk": {
+          "name": "learner_attempt_learner_id_profile_id_fk",
+          "tableFrom": "learner_attempt",
+          "tableTo": "profile",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "learner_attempt_task_administration_id_task_administration_id_fk": {
+          "name": "learner_attempt_task_administration_id_task_administration_id_fk",
+          "tableFrom": "learner_attempt",
+          "tableTo": "task_administration",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_administration_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_attempt_status": {
+          "name": "ck_attempt_status",
+          "value": "attempt_status IN ('started', 'submitted', 'completed', 'abandoned', 'invalidated')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.rubric": {
+      "name": "rubric",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "rubric_canonical_code_unique": {
+          "name": "rubric_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "assessment.rubric_criterion": {
+      "name": "rubric_criterion",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rubric_revision_id": {
+          "name": "rubric_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "weight": {
+          "name": "weight",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "critical": {
+          "name": "critical",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "level_anchors": {
+          "name": "level_anchors",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rubric_criterion_rubric_revision_id_rubric_revision_id_fk": {
+          "name": "rubric_criterion_rubric_revision_id_rubric_revision_id_fk",
+          "tableFrom": "rubric_criterion",
+          "tableTo": "rubric_revision",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "rubric_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_rubric_criterion_code": {
+          "name": "uq_rubric_criterion_code",
+          "nullsNotDistinct": false,
+          "columns": [
+            "rubric_revision_id",
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_rubric_criterion_weight": {
+          "name": "ck_rubric_criterion_weight",
+          "value": "weight BETWEEN 0 AND 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.rubric_revision": {
+      "name": "rubric_revision",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "rubric_id": {
+          "name": "rubric_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "rubric_revision_rubric_id_rubric_id_fk": {
+          "name": "rubric_revision_rubric_id_rubric_id_fk",
+          "tableFrom": "rubric_revision",
+          "tableTo": "rubric",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "rubric_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_rubric_revision_no": {
+          "name": "uq_rubric_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "rubric_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_rubric_revision_no_positive": {
+          "name": "ck_rubric_revision_no_positive",
+          "value": "revision_no > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.task_administration": {
+      "name": "task_administration",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "task_variant_id": {
+          "name": "task_variant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mode": {
+          "name": "mode",
+          "type": "administration_mode",
+          "typeSchema": "assessment",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assistance_policy": {
+          "name": "assistance_policy",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "time_limit_minutes": {
+          "name": "time_limit_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "process_capture_enabled": {
+          "name": "process_capture_enabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "task_administration_task_variant_id_task_variant_id_fk": {
+          "name": "task_administration_task_variant_id_task_variant_id_fk",
+          "tableFrom": "task_administration",
+          "tableTo": "task_variant",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_administration_time_limit": {
+          "name": "ck_administration_time_limit",
+          "value": "time_limit_minutes IS NULL OR time_limit_minutes > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.task_objective_evidence_spec": {
+      "name": "task_objective_evidence_spec",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "task_revision_id": {
+          "name": "task_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "claim_role": {
+          "name": "claim_role",
+          "type": "claim_role",
+          "typeSchema": "assessment",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_strength": {
+          "name": "evidence_strength",
+          "type": "evidence_strength",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minimum_independence": {
+          "name": "minimum_independence",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minimum_transfer": {
+          "name": "minimum_transfer",
+          "type": "transfer_level",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rubric_revision_id": {
+          "name": "rubric_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "direct_evidence_required": {
+          "name": "direct_evidence_required",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "proxy_propagation_allowed": {
+          "name": "proxy_propagation_allowed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {
+        "ix_evidence_spec_objective": {
+          "name": "ix_evidence_spec_objective",
+          "columns": [
+            {
+              "expression": "objective_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "task_objective_evidence_spec_task_revision_id_task_revision_id_fk": {
+          "name": "task_objective_evidence_spec_task_revision_id_task_revision_id_fk",
+          "tableFrom": "task_objective_evidence_spec",
+          "tableTo": "task_revision",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "task_objective_evidence_spec_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "task_objective_evidence_spec_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "task_objective_evidence_spec",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "task_objective_evidence_spec_rubric_revision_id_rubric_revision_id_fk": {
+          "name": "task_objective_evidence_spec_rubric_revision_id_rubric_revision_id_fk",
+          "tableFrom": "task_objective_evidence_spec",
+          "tableTo": "rubric_revision",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "rubric_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_task_objective_evidence_spec": {
+          "name": "uq_task_objective_evidence_spec",
+          "nullsNotDistinct": false,
+          "columns": [
+            "task_revision_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_evidence_spec_min_independence": {
+          "name": "ck_evidence_spec_min_independence",
+          "value": "minimum_independence BETWEEN 0 AND 4"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.task_revision": {
+      "name": "task_revision",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "task_template_id": {
+          "name": "task_template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "task_kind": {
+          "name": "task_kind",
+          "type": "task_kind",
+          "typeSchema": "assessment",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scenario": {
+          "name": "scenario",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "instructions": {
+          "name": "instructions",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "evidence_ceiling": {
+          "name": "evidence_ceiling",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "estimated_minutes": {
+          "name": "estimated_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "environment_config": {
+          "name": "environment_config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "task_revision_task_template_id_task_template_id_fk": {
+          "name": "task_revision_task_template_id_task_template_id_fk",
+          "tableFrom": "task_revision",
+          "tableTo": "task_template",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "task_revision_framework_release_id_framework_release_id_fk": {
+          "name": "task_revision_framework_release_id_framework_release_id_fk",
+          "tableFrom": "task_revision",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_task_revision_no": {
+          "name": "uq_task_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "task_template_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_task_revision_no_positive": {
+          "name": "ck_task_revision_no_positive",
+          "value": "revision_no > 0"
+        },
+        "ck_task_evidence_ceiling": {
+          "name": "ck_task_evidence_ceiling",
+          "value": "evidence_ceiling BETWEEN 1 AND 5"
+        },
+        "ck_task_estimated_minutes": {
+          "name": "ck_task_estimated_minutes",
+          "value": "estimated_minutes IS NULL OR estimated_minutes >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "assessment.task_template": {
+      "name": "task_template",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "task_template_canonical_code_unique": {
+          "name": "task_template_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "assessment.task_variant": {
+      "name": "task_variant",
+      "schema": "assessment",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "task_revision_id": {
+          "name": "task_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "variant_config": {
+          "name": "variant_config",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "novelty_default": {
+          "name": "novelty_default",
+          "type": "transfer_level",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'same'"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "task_variant_task_revision_id_task_revision_id_fk": {
+          "name": "task_variant_task_revision_id_task_revision_id_fk",
+          "tableFrom": "task_variant",
+          "tableTo": "task_revision",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_task_variant_code": {
+          "name": "uq_task_variant_code",
+          "nullsNotDistinct": false,
+          "columns": [
+            "task_revision_id",
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.account": {
+      "name": "account",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "account_user_id_user_id_fk": {
+          "name": "account_user_id_user_id_fk",
+          "tableFrom": "account",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.session": {
+      "name": "session",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "session_user_id_user_id_fk": {
+          "name": "session_user_id_user_id_fk",
+          "tableFrom": "session",
+          "tableTo": "user",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "session_token_unique": {
+          "name": "session_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.user": {
+      "name": "user",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_unique": {
+          "name": "user_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "auth.verification": {
+      "name": "verification",
+      "schema": "auth",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.capability_set": {
+      "name": "capability_set",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "capability_set_canonical_code_unique": {
+          "name": "capability_set_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.capability_set_competency_member": {
+      "name": "capability_set_competency_member",
+      "schema": "catalog",
+      "columns": {
+        "capability_set_revision_id": {
+          "name": "capability_set_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competency_revision_id": {
+          "name": "competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "selection_filter": {
+          "name": "selection_filter",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "capability_set_competency_member_capability_set_revision_id_capability_set_revision_id_fk": {
+          "name": "capability_set_competency_member_capability_set_revision_id_capability_set_revision_id_fk",
+          "tableFrom": "capability_set_competency_member",
+          "tableTo": "capability_set_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "capability_set_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "capability_set_competency_member_competency_revision_id_competency_revision_id_fk": {
+          "name": "capability_set_competency_member_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "capability_set_competency_member",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "capability_set_competency_member_capability_set_revision_id_competency_revision_id_pk": {
+          "name": "capability_set_competency_member_capability_set_revision_id_competency_revision_id_pk",
+          "columns": [
+            "capability_set_revision_id",
+            "competency_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.capability_set_domain_member": {
+      "name": "capability_set_domain_member",
+      "schema": "catalog",
+      "columns": {
+        "capability_set_revision_id": {
+          "name": "capability_set_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain_revision_id": {
+          "name": "domain_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "selection_filter": {
+          "name": "selection_filter",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "capability_set_domain_member_capability_set_revision_id_capability_set_revision_id_fk": {
+          "name": "capability_set_domain_member_capability_set_revision_id_capability_set_revision_id_fk",
+          "tableFrom": "capability_set_domain_member",
+          "tableTo": "capability_set_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "capability_set_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "capability_set_domain_member_domain_revision_id_domain_revision_id_fk": {
+          "name": "capability_set_domain_member_domain_revision_id_domain_revision_id_fk",
+          "tableFrom": "capability_set_domain_member",
+          "tableTo": "domain_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "domain_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "capability_set_domain_member_capability_set_revision_id_domain_revision_id_pk": {
+          "name": "capability_set_domain_member_capability_set_revision_id_domain_revision_id_pk",
+          "columns": [
+            "capability_set_revision_id",
+            "domain_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.capability_set_nested_member": {
+      "name": "capability_set_nested_member",
+      "schema": "catalog",
+      "columns": {
+        "parent_capability_set_revision_id": {
+          "name": "parent_capability_set_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "child_capability_set_revision_id": {
+          "name": "child_capability_set_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "fk_capability_set_nested_parent": {
+          "name": "fk_capability_set_nested_parent",
+          "tableFrom": "capability_set_nested_member",
+          "tableTo": "capability_set_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "parent_capability_set_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_capability_set_nested_child": {
+          "name": "fk_capability_set_nested_child",
+          "tableFrom": "capability_set_nested_member",
+          "tableTo": "capability_set_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "child_capability_set_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pk_capability_set_nested_member": {
+          "name": "pk_capability_set_nested_member",
+          "columns": [
+            "parent_capability_set_revision_id",
+            "child_capability_set_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_capability_set_nested_no_self": {
+          "name": "ck_capability_set_nested_no_self",
+          "value": "parent_capability_set_revision_id <> child_capability_set_revision_id"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.capability_set_objective_member": {
+      "name": "capability_set_objective_member",
+      "schema": "catalog",
+      "columns": {
+        "capability_set_revision_id": {
+          "name": "capability_set_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "capability_set_objective_member_capability_set_revision_id_capability_set_revision_id_fk": {
+          "name": "capability_set_objective_member_capability_set_revision_id_capability_set_revision_id_fk",
+          "tableFrom": "capability_set_objective_member",
+          "tableTo": "capability_set_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "capability_set_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "capability_set_objective_member_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "capability_set_objective_member_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "capability_set_objective_member",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "capability_set_objective_member_capability_set_revision_id_objective_revision_id_pk": {
+          "name": "capability_set_objective_member_capability_set_revision_id_objective_revision_id_pk",
+          "columns": [
+            "capability_set_revision_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.capability_set_revision": {
+      "name": "capability_set_revision",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "capability_set_id": {
+          "name": "capability_set_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "status": {
+          "name": "status",
+          "type": "publication_status",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "capability_set_revision_capability_set_id_capability_set_id_fk": {
+          "name": "capability_set_revision_capability_set_id_capability_set_id_fk",
+          "tableFrom": "capability_set_revision",
+          "tableTo": "capability_set",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "capability_set_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "capability_set_revision_framework_release_id_framework_release_id_fk": {
+          "name": "capability_set_revision_framework_release_id_framework_release_id_fk",
+          "tableFrom": "capability_set_revision",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_capability_set_revision_no": {
+          "name": "uq_capability_set_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "capability_set_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_capability_set_revision_no_positive": {
+          "name": "ck_capability_set_revision_no_positive",
+          "value": "revision_no > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.competency": {
+      "name": "competency",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "competency_canonical_code_unique": {
+          "name": "competency_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.competency_objective_membership": {
+      "name": "competency_objective_membership",
+      "schema": "catalog",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competency_revision_id": {
+          "name": "competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_role": {
+          "name": "membership_role",
+          "type": "membership_role",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "uq_objective_primary_competency_per_release": {
+          "name": "uq_objective_primary_competency_per_release",
+          "columns": [
+            {
+              "expression": "framework_release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "objective_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "membership_role = 'primary'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "competency_objective_membership_framework_release_id_framework_release_id_fk": {
+          "name": "competency_objective_membership_framework_release_id_framework_release_id_fk",
+          "tableFrom": "competency_objective_membership",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "competency_objective_membership_competency_revision_id_competency_revision_id_fk": {
+          "name": "competency_objective_membership_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "competency_objective_membership",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "competency_objective_membership_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "competency_objective_membership_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "competency_objective_membership",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "competency_objective_membership_framework_release_id_competency_revision_id_objective_revision_id_pk": {
+          "name": "competency_objective_membership_framework_release_id_competency_revision_id_objective_revision_id_pk",
+          "columns": [
+            "framework_release_id",
+            "competency_revision_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.competency_relationship": {
+      "name": "competency_relationship",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_competency_revision_id": {
+          "name": "source_competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_competency_revision_id": {
+          "name": "target_competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "relationship_type": {
+          "name": "relationship_type",
+          "type": "competency_relationship_type",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provenance": {
+          "name": "provenance",
+          "type": "relationship_provenance",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "supporting_objective_edge_count": {
+          "name": "supporting_objective_edge_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "validation_status": {
+          "name": "validation_status",
+          "type": "validation_status",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "competency_relationship_framework_release_id_framework_release_id_fk": {
+          "name": "competency_relationship_framework_release_id_framework_release_id_fk",
+          "tableFrom": "competency_relationship",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "competency_relationship_source_competency_revision_id_competency_revision_id_fk": {
+          "name": "competency_relationship_source_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "competency_relationship",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "source_competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "competency_relationship_target_competency_revision_id_competency_revision_id_fk": {
+          "name": "competency_relationship_target_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "competency_relationship",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "target_competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_competency_relationship": {
+          "name": "uq_competency_relationship",
+          "nullsNotDistinct": false,
+          "columns": [
+            "framework_release_id",
+            "source_competency_revision_id",
+            "target_competency_revision_id",
+            "relationship_type"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_competency_relationship_no_self": {
+          "name": "ck_competency_relationship_no_self",
+          "value": "source_competency_revision_id <> target_competency_revision_id"
+        },
+        "ck_competency_relationship_confidence": {
+          "name": "ck_competency_relationship_confidence",
+          "value": "confidence IS NULL OR confidence BETWEEN 0 AND 1"
+        },
+        "ck_competency_relationship_edge_count": {
+          "name": "ck_competency_relationship_edge_count",
+          "value": "supporting_objective_edge_count >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.competency_revision": {
+      "name": "competency_revision",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "competency_id": {
+          "name": "competency_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "outcome_statement": {
+          "name": "outcome_statement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "competency_revision_competency_id_competency_id_fk": {
+          "name": "competency_revision_competency_id_competency_id_fk",
+          "tableFrom": "competency_revision",
+          "tableTo": "competency",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "competency_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_competency_revision_no": {
+          "name": "uq_competency_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "competency_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_competency_revision_no_positive": {
+          "name": "ck_competency_revision_no_positive",
+          "value": "revision_no > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.domain": {
+      "name": "domain",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "domain_canonical_code_unique": {
+          "name": "domain_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.domain_competency_membership": {
+      "name": "domain_competency_membership",
+      "schema": "catalog",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain_revision_id": {
+          "name": "domain_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competency_revision_id": {
+          "name": "competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_role": {
+          "name": "membership_role",
+          "type": "membership_role",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "uq_competency_primary_domain_per_release": {
+          "name": "uq_competency_primary_domain_per_release",
+          "columns": [
+            {
+              "expression": "framework_release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "competency_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "membership_role = 'primary'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "domain_competency_membership_framework_release_id_framework_release_id_fk": {
+          "name": "domain_competency_membership_framework_release_id_framework_release_id_fk",
+          "tableFrom": "domain_competency_membership",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "domain_competency_membership_domain_revision_id_domain_revision_id_fk": {
+          "name": "domain_competency_membership_domain_revision_id_domain_revision_id_fk",
+          "tableFrom": "domain_competency_membership",
+          "tableTo": "domain_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "domain_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "domain_competency_membership_competency_revision_id_competency_revision_id_fk": {
+          "name": "domain_competency_membership_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "domain_competency_membership",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "domain_competency_membership_framework_release_id_domain_revision_id_competency_revision_id_pk": {
+          "name": "domain_competency_membership_framework_release_id_domain_revision_id_competency_revision_id_pk",
+          "columns": [
+            "framework_release_id",
+            "domain_revision_id",
+            "competency_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.domain_revision": {
+      "name": "domain_revision",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "domain_id": {
+          "name": "domain_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "domain_revision_domain_id_domain_id_fk": {
+          "name": "domain_revision_domain_id_domain_id_fk",
+          "tableFrom": "domain_revision",
+          "tableTo": "domain",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "domain_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_domain_revision_no": {
+          "name": "uq_domain_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "domain_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_domain_revision_no_positive": {
+          "name": "ck_domain_revision_no_positive",
+          "value": "revision_no > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.framework": {
+      "name": "framework",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "framework_code_unique": {
+          "name": "framework_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.framework_release": {
+      "name": "framework_release",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "framework_id": {
+          "name": "framework_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "publication_status",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "framework_release_framework_id_framework_id_fk": {
+          "name": "framework_release_framework_id_framework_id_fk",
+          "tableFrom": "framework_release",
+          "tableTo": "framework",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_framework_release_version": {
+          "name": "uq_framework_release_version",
+          "nullsNotDistinct": false,
+          "columns": [
+            "framework_id",
+            "version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_framework_release_published_at": {
+          "name": "ck_framework_release_published_at",
+          "value": "(status = 'published' AND published_at IS NOT NULL) OR status <> 'published'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.framework_release_competency": {
+      "name": "framework_release_competency",
+      "schema": "catalog",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "competency_revision_id": {
+          "name": "competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "framework_release_competency_framework_release_id_framework_release_id_fk": {
+          "name": "framework_release_competency_framework_release_id_framework_release_id_fk",
+          "tableFrom": "framework_release_competency",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "framework_release_competency_competency_revision_id_competency_revision_id_fk": {
+          "name": "framework_release_competency_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "framework_release_competency",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "framework_release_competency_framework_release_id_competency_revision_id_pk": {
+          "name": "framework_release_competency_framework_release_id_competency_revision_id_pk",
+          "columns": [
+            "framework_release_id",
+            "competency_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.framework_release_domain": {
+      "name": "framework_release_domain",
+      "schema": "catalog",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "domain_revision_id": {
+          "name": "domain_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "framework_release_domain_framework_release_id_framework_release_id_fk": {
+          "name": "framework_release_domain_framework_release_id_framework_release_id_fk",
+          "tableFrom": "framework_release_domain",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "framework_release_domain_domain_revision_id_domain_revision_id_fk": {
+          "name": "framework_release_domain_domain_revision_id_domain_revision_id_fk",
+          "tableFrom": "framework_release_domain",
+          "tableTo": "domain_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "domain_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "framework_release_domain_framework_release_id_domain_revision_id_pk": {
+          "name": "framework_release_domain_framework_release_id_domain_revision_id_pk",
+          "columns": [
+            "framework_release_id",
+            "domain_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.framework_release_objective": {
+      "name": "framework_release_objective",
+      "schema": "catalog",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "framework_release_objective_framework_release_id_framework_release_id_fk": {
+          "name": "framework_release_objective_framework_release_id_framework_release_id_fk",
+          "tableFrom": "framework_release_objective",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "framework_release_objective_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "framework_release_objective_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "framework_release_objective",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "framework_release_objective_framework_release_id_objective_revision_id_pk": {
+          "name": "framework_release_objective_framework_release_id_objective_revision_id_pk",
+          "columns": [
+            "framework_release_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.learning_objective": {
+      "name": "learning_objective",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "learning_objective_canonical_code_unique": {
+          "name": "learning_objective_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "catalog.learning_objective_revision": {
+      "name": "learning_objective_revision",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "learning_objective_id": {
+          "name": "learning_objective_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "statement": {
+          "name": "statement",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mastery_level": {
+          "name": "mastery_level",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "verb_code": {
+          "name": "verb_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assurance_class": {
+          "name": "assurance_class",
+          "type": "char(1)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "performance_object": {
+          "name": "performance_object",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "conditions": {
+          "name": "conditions",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "success_criteria": {
+          "name": "success_criteria",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "critical_errors": {
+          "name": "critical_errors",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "performance_modes": {
+          "name": "performance_modes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "learning_objective_revision_learning_objective_id_learning_objective_id_fk": {
+          "name": "learning_objective_revision_learning_objective_id_learning_objective_id_fk",
+          "tableFrom": "learning_objective_revision",
+          "tableTo": "learning_objective",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "learning_objective_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "learning_objective_revision_verb_code_verb_definition_code_fk": {
+          "name": "learning_objective_revision_verb_code_verb_definition_code_fk",
+          "tableFrom": "learning_objective_revision",
+          "tableTo": "verb_definition",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "verb_code"
+          ],
+          "columnsTo": [
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_objective_revision_no": {
+          "name": "uq_objective_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "learning_objective_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_objective_revision_no_positive": {
+          "name": "ck_objective_revision_no_positive",
+          "value": "revision_no > 0"
+        },
+        "ck_objective_mastery_level": {
+          "name": "ck_objective_mastery_level",
+          "value": "mastery_level BETWEEN 1 AND 5"
+        },
+        "ck_objective_assurance_class": {
+          "name": "ck_objective_assurance_class",
+          "value": "assurance_class IN ('A', 'B', 'C')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.objective_evidence_implication": {
+      "name": "objective_evidence_implication",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_objective_revision_id": {
+          "name": "source_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_objective_revision_id": {
+          "name": "target_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "implication_type": {
+          "name": "implication_type",
+          "type": "evidence_implication_type",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "derived_evidence_strength": {
+          "name": "derived_evidence_strength",
+          "type": "evidence_strength",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "maximum_target_state": {
+          "name": "maximum_target_state",
+          "type": "assertion_state",
+          "typeSchema": "learner",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "required_observable_codes": {
+          "name": "required_observable_codes",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[]::text[]"
+        },
+        "automatic": {
+          "name": "automatic",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "transitive": {
+          "name": "transitive",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "validation_status": {
+          "name": "validation_status",
+          "type": "validation_status",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_evidence_implication_framework_release_id_framework_release_id_fk": {
+          "name": "objective_evidence_implication_framework_release_id_framework_release_id_fk",
+          "tableFrom": "objective_evidence_implication",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_evidence_implication_source_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_evidence_implication_source_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_evidence_implication",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "source_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_evidence_implication_target_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_evidence_implication_target_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_evidence_implication",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "target_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_objective_evidence_implication": {
+          "name": "uq_objective_evidence_implication",
+          "nullsNotDistinct": false,
+          "columns": [
+            "framework_release_id",
+            "source_objective_revision_id",
+            "target_objective_revision_id",
+            "implication_type"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_evidence_implication_no_self": {
+          "name": "ck_evidence_implication_no_self",
+          "value": "source_objective_revision_id <> target_objective_revision_id"
+        },
+        "ck_evidence_implication_max_state": {
+          "name": "ck_evidence_implication_max_state",
+          "value": "maximum_target_state IN ('developing', 'demonstrated')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.objective_relationship": {
+      "name": "objective_relationship",
+      "schema": "catalog",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_objective_revision_id": {
+          "name": "source_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_objective_revision_id": {
+          "name": "target_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "relationship_type": {
+          "name": "relationship_type",
+          "type": "objective_relationship_type",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "strength": {
+          "name": "strength",
+          "type": "relationship_strength",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "context": {
+          "name": "context",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "provenance": {
+          "name": "provenance",
+          "type": "relationship_provenance",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "confidence": {
+          "name": "confidence",
+          "type": "numeric(4, 3)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "validation_status": {
+          "name": "validation_status",
+          "type": "validation_status",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_objective_relationship_source": {
+          "name": "ix_objective_relationship_source",
+          "columns": [
+            {
+              "expression": "framework_release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "source_objective_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_objective_relationship_target": {
+          "name": "ix_objective_relationship_target",
+          "columns": [
+            {
+              "expression": "framework_release_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "target_objective_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "objective_relationship_framework_release_id_framework_release_id_fk": {
+          "name": "objective_relationship_framework_release_id_framework_release_id_fk",
+          "tableFrom": "objective_relationship",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_relationship_source_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_relationship_source_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_relationship",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "source_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_relationship_target_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_relationship_target_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_relationship",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "target_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_objective_relationship": {
+          "name": "uq_objective_relationship",
+          "nullsNotDistinct": false,
+          "columns": [
+            "framework_release_id",
+            "source_objective_revision_id",
+            "target_objective_revision_id",
+            "relationship_type"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_objective_relationship_no_self": {
+          "name": "ck_objective_relationship_no_self",
+          "value": "source_objective_revision_id <> target_objective_revision_id"
+        },
+        "ck_objective_relationship_confidence": {
+          "name": "ck_objective_relationship_confidence",
+          "value": "confidence IS NULL OR confidence BETWEEN 0 AND 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.objective_revision_transition": {
+      "name": "objective_revision_transition",
+      "schema": "catalog",
+      "columns": {
+        "from_objective_revision_id": {
+          "name": "from_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_objective_revision_id": {
+          "name": "to_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "compatibility": {
+          "name": "compatibility",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rationale": {
+          "name": "rationale",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approved_by": {
+          "name": "approved_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_revision_transition_from_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_revision_transition_from_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_revision_transition",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "from_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_revision_transition_to_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_revision_transition_to_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_revision_transition",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "to_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_revision_transition_from_objective_revision_id_to_objective_revision_id_pk": {
+          "name": "objective_revision_transition_from_objective_revision_id_to_objective_revision_id_pk",
+          "columns": [
+            "from_objective_revision_id",
+            "to_objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_transition_compatibility": {
+          "name": "ck_transition_compatibility",
+          "value": "compatibility IN ('equivalent', 'evidence_carries_forward', 'requires_revalidation', 'incompatible')"
+        },
+        "ck_transition_no_self": {
+          "name": "ck_transition_no_self",
+          "value": "from_objective_revision_id <> to_objective_revision_id"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "catalog.verb_definition": {
+      "name": "verb_definition",
+      "schema": "catalog",
+      "columns": {
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "definition": {
+          "name": "definition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "required_elements": {
+          "name": "required_elements",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "does_not_establish": {
+          "name": "does_not_establish",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "default_evidence_channels": {
+          "name": "default_evidence_channels",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "allowed_mastery_levels": {
+          "name": "allowed_mastery_levels",
+          "type": "smallint[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "ARRAY[1,2,3,4,5]::smallint[]"
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_verb_definition_allowed_levels": {
+          "name": "ck_verb_definition_allowed_levels",
+          "value": "allowed_mastery_levels <@ ARRAY[1,2,3,4,5]::smallint[]"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "evidence.artifact": {
+      "name": "artifact",
+      "schema": "evidence",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "artifact_type": {
+          "name": "artifact_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "storage_uri": {
+          "name": "storage_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "content_hash": {
+          "name": "content_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "media_type": {
+          "name": "media_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "classification": {
+          "name": "classification",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "retention_policy": {
+          "name": "retention_policy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "artifact_learner_id_profile_id_fk": {
+          "name": "artifact_learner_id_profile_id_fk",
+          "tableFrom": "artifact",
+          "tableTo": "profile",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "artifact_attempt_id_learner_attempt_id_fk": {
+          "name": "artifact_attempt_id_learner_attempt_id_fk",
+          "tableFrom": "artifact",
+          "tableTo": "learner_attempt",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "attempt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "evidence.observable_result": {
+      "name": "observable_result",
+      "schema": "evidence",
+      "columns": {
+        "evidence_observation_id": {
+          "name": "evidence_observation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "observable_code": {
+          "name": "observable_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_spec_id": {
+          "name": "evidence_spec_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "result": {
+          "name": "result",
+          "type": "observation_result",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "score": {
+          "name": "score",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "observable_result_evidence_observation_id_observation_id_fk": {
+          "name": "observable_result_evidence_observation_id_observation_id_fk",
+          "tableFrom": "observable_result",
+          "tableTo": "observation",
+          "schemaTo": "evidence",
+          "columnsFrom": [
+            "evidence_observation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "fk_observable_result_spec_observable": {
+          "name": "fk_observable_result_spec_observable",
+          "tableFrom": "observable_result",
+          "tableTo": "evidence_spec_observable",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "evidence_spec_id",
+            "observable_code"
+          ],
+          "columnsTo": [
+            "evidence_spec_id",
+            "code"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "observable_result_evidence_observation_id_observable_code_pk": {
+          "name": "observable_result_evidence_observation_id_observable_code_pk",
+          "columns": [
+            "evidence_observation_id",
+            "observable_code"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_observable_result_score": {
+          "name": "ck_observable_result_score",
+          "value": "score IS NULL OR score BETWEEN 0 AND 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "evidence.observation": {
+      "name": "observation",
+      "schema": "evidence",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "attempt_id": {
+          "name": "attempt_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_spec_id": {
+          "name": "evidence_spec_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "result": {
+          "name": "result",
+          "type": "observation_result",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "evidence_strength": {
+          "name": "evidence_strength",
+          "type": "evidence_strength",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "origin": {
+          "name": "origin",
+          "type": "evidence_origin",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "independence_level": {
+          "name": "independence_level",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transfer_level": {
+          "name": "transfer_level",
+          "type": "transfer_level",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rubric_score": {
+          "name": "rubric_score",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "machine_verified": {
+          "name": "machine_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "human_verified": {
+          "name": "human_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "source_evidence_id": {
+          "name": "source_evidence_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "details": {
+          "name": "details",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "observed_at": {
+          "name": "observed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ix_evidence_learner_objective_time": {
+          "name": "ix_evidence_learner_objective_time",
+          "columns": [
+            {
+              "expression": "learner_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "objective_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "observed_at",
+              "isExpression": false,
+              "asc": false,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_evidence_source": {
+          "name": "ix_evidence_source",
+          "columns": [
+            {
+              "expression": "source_evidence_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "ix_evidence_attempt": {
+          "name": "ix_evidence_attempt",
+          "columns": [
+            {
+              "expression": "attempt_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "observation_learner_id_profile_id_fk": {
+          "name": "observation_learner_id_profile_id_fk",
+          "tableFrom": "observation",
+          "tableTo": "profile",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_attempt_id_learner_attempt_id_fk": {
+          "name": "observation_attempt_id_learner_attempt_id_fk",
+          "tableFrom": "observation",
+          "tableTo": "learner_attempt",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "attempt_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "observation_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "observation",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_evidence_spec_id_task_objective_evidence_spec_id_fk": {
+          "name": "observation_evidence_spec_id_task_objective_evidence_spec_id_fk",
+          "tableFrom": "observation",
+          "tableTo": "task_objective_evidence_spec",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "evidence_spec_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_source_evidence_id_observation_id_fk": {
+          "name": "observation_source_evidence_id_observation_id_fk",
+          "tableFrom": "observation",
+          "tableTo": "observation",
+          "schemaTo": "evidence",
+          "columnsFrom": [
+            "source_evidence_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_observation_independence": {
+          "name": "ck_observation_independence",
+          "value": "independence_level BETWEEN 0 AND 4"
+        },
+        "ck_observation_rubric_score": {
+          "name": "ck_observation_rubric_score",
+          "value": "rubric_score IS NULL OR rubric_score BETWEEN 0 AND 1"
+        },
+        "ck_observation_status": {
+          "name": "ck_observation_status",
+          "value": "status IN ('active', 'voided', 'superseded')"
+        },
+        "ck_observation_origin_source": {
+          "name": "ck_observation_origin_source",
+          "value": "(origin = 'direct' AND source_evidence_id IS NULL) OR (origin = 'proxy' AND source_evidence_id IS NOT NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "evidence.observation_artifact": {
+      "name": "observation_artifact",
+      "schema": "evidence",
+      "columns": {
+        "evidence_observation_id": {
+          "name": "evidence_observation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "artifact_id": {
+          "name": "artifact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "observation_artifact_evidence_observation_id_observation_id_fk": {
+          "name": "observation_artifact_evidence_observation_id_observation_id_fk",
+          "tableFrom": "observation_artifact",
+          "tableTo": "observation",
+          "schemaTo": "evidence",
+          "columnsFrom": [
+            "evidence_observation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "observation_artifact_artifact_id_artifact_id_fk": {
+          "name": "observation_artifact_artifact_id_artifact_id_fk",
+          "tableFrom": "observation_artifact",
+          "tableTo": "artifact",
+          "schemaTo": "evidence",
+          "columnsFrom": [
+            "artifact_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "observation_artifact_evidence_observation_id_artifact_id_pk": {
+          "name": "observation_artifact_evidence_observation_id_artifact_id_pk",
+          "columns": [
+            "evidence_observation_id",
+            "artifact_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "learner.profile": {
+      "name": "profile",
+      "schema": "learner",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "external_subject_id": {
+          "name": "external_subject_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profile_external_subject_id_unique": {
+          "name": "profile_external_subject_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "external_subject_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "learning.asset": {
+      "name": "asset",
+      "schema": "learning",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "asset_canonical_code_unique": {
+          "name": "asset_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "learning.asset_fragment": {
+      "name": "asset_fragment",
+      "schema": "learning",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "asset_revision_id": {
+          "name": "asset_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fragment_order": {
+          "name": "fragment_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_locator": {
+          "name": "source_locator",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "asset_fragment_asset_revision_id_asset_revision_id_fk": {
+          "name": "asset_fragment_asset_revision_id_asset_revision_id_fk",
+          "tableFrom": "asset_fragment",
+          "tableTo": "asset_revision",
+          "schemaTo": "learning",
+          "columnsFrom": [
+            "asset_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_asset_fragment_order": {
+          "name": "uq_asset_fragment_order",
+          "nullsNotDistinct": false,
+          "columns": [
+            "asset_revision_id",
+            "fragment_order"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "learning.asset_objective_alignment": {
+      "name": "asset_objective_alignment",
+      "schema": "learning",
+      "columns": {
+        "asset_fragment_id": {
+          "name": "asset_fragment_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "coverage": {
+          "name": "coverage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "instructional_strategy": {
+          "name": "instructional_strategy",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "asset_objective_alignment_asset_fragment_id_asset_fragment_id_fk": {
+          "name": "asset_objective_alignment_asset_fragment_id_asset_fragment_id_fk",
+          "tableFrom": "asset_objective_alignment",
+          "tableTo": "asset_fragment",
+          "schemaTo": "learning",
+          "columnsFrom": [
+            "asset_fragment_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "asset_objective_alignment_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "asset_objective_alignment_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "asset_objective_alignment",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "asset_objective_alignment_asset_fragment_id_objective_revision_id_purpose_pk": {
+          "name": "asset_objective_alignment_asset_fragment_id_objective_revision_id_purpose_pk",
+          "columns": [
+            "asset_fragment_id",
+            "objective_revision_id",
+            "purpose"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_alignment_purpose": {
+          "name": "ck_alignment_purpose",
+          "value": "purpose IN ('teaches', 'practices', 'prepares_for')"
+        },
+        "ck_alignment_coverage": {
+          "name": "ck_alignment_coverage",
+          "value": "coverage IN ('introductory', 'substantial', 'comprehensive')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "learning.asset_revision": {
+      "name": "asset_revision",
+      "schema": "learning",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "asset_id": {
+          "name": "asset_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revision_no": {
+          "name": "revision_no",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "asset_type": {
+          "name": "asset_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_uri": {
+          "name": "source_uri",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "estimated_minutes": {
+          "name": "estimated_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "asset_revision_asset_id_asset_id_fk": {
+          "name": "asset_revision_asset_id_asset_id_fk",
+          "tableFrom": "asset_revision",
+          "tableTo": "asset",
+          "schemaTo": "learning",
+          "columnsFrom": [
+            "asset_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_asset_revision_no": {
+          "name": "uq_asset_revision_no",
+          "nullsNotDistinct": false,
+          "columns": [
+            "asset_id",
+            "revision_no"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_asset_revision_no_positive": {
+          "name": "ck_asset_revision_no_positive",
+          "value": "revision_no > 0"
+        },
+        "ck_asset_type": {
+          "name": "ck_asset_type",
+          "value": "asset_type IN ('article', 'video', 'worked_example', 'interactive', 'documentation', 'reference', 'tutorial')"
+        },
+        "ck_asset_estimated_minutes": {
+          "name": "ck_asset_estimated_minutes",
+          "value": "estimated_minutes IS NULL OR estimated_minutes >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "projection.competency_relationship": {
+      "name": "competency_relationship",
+      "schema": "projection",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_competency_revision_id": {
+          "name": "source_competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "target_competency_revision_id": {
+          "name": "target_competency_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inferred_type": {
+          "name": "inferred_type",
+          "type": "competency_relationship_type",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "supporting_edge_count": {
+          "name": "supporting_edge_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_coverage": {
+          "name": "source_coverage",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_coverage": {
+          "name": "target_coverage",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "calculated_at": {
+          "name": "calculated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "competency_relationship_framework_release_id_framework_release_id_fk": {
+          "name": "competency_relationship_framework_release_id_framework_release_id_fk",
+          "tableFrom": "competency_relationship",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "competency_relationship_source_competency_revision_id_competency_revision_id_fk": {
+          "name": "competency_relationship_source_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "competency_relationship",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "source_competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "competency_relationship_target_competency_revision_id_competency_revision_id_fk": {
+          "name": "competency_relationship_target_competency_revision_id_competency_revision_id_fk",
+          "tableFrom": "competency_relationship",
+          "tableTo": "competency_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "target_competency_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "competency_relationship_framework_release_id_source_competency_revision_id_target_competency_revision_id_inferred_type_pk": {
+          "name": "competency_relationship_framework_release_id_source_competency_revision_id_target_competency_revision_id_inferred_type_pk",
+          "columns": [
+            "framework_release_id",
+            "source_competency_revision_id",
+            "target_competency_revision_id",
+            "inferred_type"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "projection.frontier_item": {
+      "name": "frontier_item",
+      "schema": "projection",
+      "columns": {
+        "frontier_snapshot_id": {
+          "name": "frontier_snapshot_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "frontier_score": {
+          "name": "frontier_score",
+          "type": "numeric(8, 5)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reasons": {
+          "name": "reasons",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "recommended_action": {
+          "name": "recommended_action",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "frontier_item_frontier_snapshot_id_frontier_snapshot_id_fk": {
+          "name": "frontier_item_frontier_snapshot_id_frontier_snapshot_id_fk",
+          "tableFrom": "frontier_item",
+          "tableTo": "frontier_snapshot",
+          "schemaTo": "projection",
+          "columnsFrom": [
+            "frontier_snapshot_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "frontier_item_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "frontier_item_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "frontier_item",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "frontier_item_frontier_snapshot_id_objective_revision_id_pk": {
+          "name": "frontier_item_frontier_snapshot_id_objective_revision_id_pk",
+          "columns": [
+            "frontier_snapshot_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "projection.frontier_snapshot": {
+      "name": "frontier_snapshot",
+      "schema": "projection",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_level_revision_id": {
+          "name": "role_level_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "calculated_at": {
+          "name": "calculated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "frontier_snapshot_learner_id_profile_id_fk": {
+          "name": "frontier_snapshot_learner_id_profile_id_fk",
+          "tableFrom": "frontier_snapshot",
+          "tableTo": "profile",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "frontier_snapshot_role_level_revision_id_role_level_revision_id_fk": {
+          "name": "frontier_snapshot_role_level_revision_id_role_level_revision_id_fk",
+          "tableFrom": "frontier_snapshot",
+          "tableTo": "role_level_revision",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "role_level_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "projection.objective_dependency_closure": {
+      "name": "objective_dependency_closure",
+      "schema": "projection",
+      "columns": {
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ancestor_objective_revision_id": {
+          "name": "ancestor_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "descendant_objective_revision_id": {
+          "name": "descendant_objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minimum_depth": {
+          "name": "minimum_depth",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_dependency_closure_framework_release_id_framework_release_id_fk": {
+          "name": "objective_dependency_closure_framework_release_id_framework_release_id_fk",
+          "tableFrom": "objective_dependency_closure",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_dependency_closure_ancestor_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_dependency_closure_ancestor_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_dependency_closure",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "ancestor_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_dependency_closure_descendant_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_dependency_closure_descendant_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_dependency_closure",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "descendant_objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "objective_dependency_closure_framework_release_id_ancestor_objective_revision_id_descendant_objective_revision_id_pk": {
+          "name": "objective_dependency_closure_framework_release_id_ancestor_objective_revision_id_descendant_objective_revision_id_pk",
+          "columns": [
+            "framework_release_id",
+            "ancestor_objective_revision_id",
+            "descendant_objective_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_closure_depth_positive": {
+          "name": "ck_closure_depth_positive",
+          "value": "minimum_depth > 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "qualification.learner_role_state": {
+      "name": "learner_role_state",
+      "schema": "qualification",
+      "columns": {
+        "learner_id": {
+          "name": "learner_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_level_revision_id": {
+          "name": "role_level_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "readiness_score": {
+          "name": "readiness_score",
+          "type": "numeric(6, 5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "requirements_met": {
+          "name": "requirements_met",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "requirements_total": {
+          "name": "requirements_total",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "blockers": {
+          "name": "blockers",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "calculated_at": {
+          "name": "calculated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "learner_role_state_learner_id_profile_id_fk": {
+          "name": "learner_role_state_learner_id_profile_id_fk",
+          "tableFrom": "learner_role_state",
+          "tableTo": "profile",
+          "schemaTo": "learner",
+          "columnsFrom": [
+            "learner_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "learner_role_state_role_level_revision_id_role_level_revision_id_fk": {
+          "name": "learner_role_state_role_level_revision_id_role_level_revision_id_fk",
+          "tableFrom": "learner_role_state",
+          "tableTo": "role_level_revision",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "role_level_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "learner_role_state_learner_id_role_level_revision_id_pk": {
+          "name": "learner_role_state_learner_id_role_level_revision_id_pk",
+          "columns": [
+            "learner_id",
+            "role_level_revision_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_learner_role_state": {
+          "name": "ck_learner_role_state",
+          "value": "state IN ('not_started', 'in_progress', 'ready_for_review', 'qualified', 'stale', 'revoked')"
+        },
+        "ck_learner_role_readiness": {
+          "name": "ck_learner_role_readiness",
+          "value": "readiness_score IS NULL OR readiness_score BETWEEN 0 AND 1"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "qualification.objective_requirement": {
+      "name": "objective_requirement",
+      "schema": "qualification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "requirement_group_id": {
+          "name": "requirement_group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "objective_revision_id": {
+          "name": "objective_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_capability_set_revision_id": {
+          "name": "source_capability_set_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "direct_evidence_required": {
+          "name": "direct_evidence_required",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "proxy_evidence_allowed": {
+          "name": "proxy_evidence_allowed",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "minimum_independence": {
+          "name": "minimum_independence",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "minimum_transfer": {
+          "name": "minimum_transfer",
+          "type": "transfer_level",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "maximum_evidence_age": {
+          "name": "maximum_evidence_age",
+          "type": "interval",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "objective_requirement_requirement_group_id_requirement_group_id_fk": {
+          "name": "objective_requirement_requirement_group_id_requirement_group_id_fk",
+          "tableFrom": "objective_requirement",
+          "tableTo": "requirement_group",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "requirement_group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_requirement_objective_revision_id_learning_objective_revision_id_fk": {
+          "name": "objective_requirement_objective_revision_id_learning_objective_revision_id_fk",
+          "tableFrom": "objective_requirement",
+          "tableTo": "learning_objective_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "objective_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "objective_requirement_source_capability_set_revision_id_capability_set_revision_id_fk": {
+          "name": "objective_requirement_source_capability_set_revision_id_capability_set_revision_id_fk",
+          "tableFrom": "objective_requirement",
+          "tableTo": "capability_set_revision",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "source_capability_set_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_objective_requirement": {
+          "name": "uq_objective_requirement",
+          "nullsNotDistinct": false,
+          "columns": [
+            "requirement_group_id",
+            "objective_revision_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_objective_requirement_independence": {
+          "name": "ck_objective_requirement_independence",
+          "value": "minimum_independence IS NULL OR minimum_independence BETWEEN 0 AND 4"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "qualification.requirement_group": {
+      "name": "requirement_group",
+      "schema": "qualification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "role_level_revision_id": {
+          "name": "role_level_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parent_group_id": {
+          "name": "parent_group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operator": {
+          "name": "operator",
+          "type": "requirement_operator",
+          "typeSchema": "qualification",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minimum_count": {
+          "name": "minimum_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "requirement_group_role_level_revision_id_role_level_revision_id_fk": {
+          "name": "requirement_group_role_level_revision_id_role_level_revision_id_fk",
+          "tableFrom": "requirement_group",
+          "tableTo": "role_level_revision",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "role_level_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "requirement_group_parent_group_id_requirement_group_id_fk": {
+          "name": "requirement_group_parent_group_id_requirement_group_id_fk",
+          "tableFrom": "requirement_group",
+          "tableTo": "requirement_group",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "parent_group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "ck_requirement_group_n_of": {
+          "name": "ck_requirement_group_n_of",
+          "value": "(operator = 'n_of' AND minimum_count IS NOT NULL AND minimum_count > 0) OR (operator <> 'n_of' AND minimum_count IS NULL)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "qualification.role": {
+      "name": "role",
+      "schema": "qualification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "canonical_code": {
+          "name": "canonical_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "role_canonical_code_unique": {
+          "name": "role_canonical_code_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "canonical_code"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "qualification.role_level": {
+      "name": "role_level",
+      "schema": "qualification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level": {
+          "name": "level",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "canonical_title": {
+          "name": "canonical_title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "role_level_role_id_role_id_fk": {
+          "name": "role_level_role_id_role_id_fk",
+          "tableFrom": "role_level",
+          "tableTo": "role",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_role_level": {
+          "name": "uq_role_level",
+          "nullsNotDistinct": false,
+          "columns": [
+            "role_id",
+            "level"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "ck_role_level_range": {
+          "name": "ck_role_level_range",
+          "value": "level BETWEEN 1 AND 5"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "qualification.role_level_revision": {
+      "name": "role_level_revision",
+      "schema": "qualification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "role_level_id": {
+          "name": "role_level_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "framework_release_id": {
+          "name": "framework_release_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "version": {
+          "name": "version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "publication_status",
+          "typeSchema": "catalog",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "extends_role_level_revision_id": {
+          "name": "extends_role_level_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "role_level_revision_role_level_id_role_level_id_fk": {
+          "name": "role_level_revision_role_level_id_role_level_id_fk",
+          "tableFrom": "role_level_revision",
+          "tableTo": "role_level",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "role_level_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "role_level_revision_framework_release_id_framework_release_id_fk": {
+          "name": "role_level_revision_framework_release_id_framework_release_id_fk",
+          "tableFrom": "role_level_revision",
+          "tableTo": "framework_release",
+          "schemaTo": "catalog",
+          "columnsFrom": [
+            "framework_release_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "role_level_revision_extends_role_level_revision_id_role_level_revision_id_fk": {
+          "name": "role_level_revision_extends_role_level_revision_id_role_level_revision_id_fk",
+          "tableFrom": "role_level_revision",
+          "tableTo": "role_level_revision",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "extends_role_level_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_role_level_revision_version": {
+          "name": "uq_role_level_revision_version",
+          "nullsNotDistinct": false,
+          "columns": [
+            "role_level_id",
+            "version"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "qualification.task_requirement": {
+      "name": "task_requirement",
+      "schema": "qualification",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "requirement_group_id": {
+          "name": "requirement_group_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "task_revision_id": {
+          "name": "task_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "minimum_result": {
+          "name": "minimum_result",
+          "type": "observation_result",
+          "typeSchema": "evidence",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'successful'"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "task_requirement_requirement_group_id_requirement_group_id_fk": {
+          "name": "task_requirement_requirement_group_id_requirement_group_id_fk",
+          "tableFrom": "task_requirement",
+          "tableTo": "requirement_group",
+          "schemaTo": "qualification",
+          "columnsFrom": [
+            "requirement_group_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "task_requirement_task_revision_id_task_revision_id_fk": {
+          "name": "task_requirement_task_revision_id_task_revision_id_fk",
+          "tableFrom": "task_requirement",
+          "tableTo": "task_revision",
+          "schemaTo": "assessment",
+          "columnsFrom": [
+            "task_revision_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "uq_task_requirement": {
+          "name": "uq_task_requirement",
+          "nullsNotDistinct": false,
+          "columns": [
+            "requirement_group_id",
+            "task_revision_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "assessment.administration_mode": {
+      "name": "administration_mode",
+      "schema": "assessment",
+      "values": [
+        "practice",
+        "formative",
+        "summative",
+        "qualification"
+      ]
+    },
+    "learner.assertion_state": {
+      "name": "assertion_state",
+      "schema": "learner",
+      "values": [
+        "unassessed",
+        "developing",
+        "demonstrated",
+        "stale",
+        "contradicted"
+      ]
+    },
+    "assessment.claim_role": {
+      "name": "claim_role",
+      "schema": "assessment",
+      "values": [
+        "primary",
+        "supporting",
+        "incidental"
+      ]
+    },
+    "catalog.competency_relationship_type": {
+      "name": "competency_relationship_type",
+      "schema": "catalog",
+      "values": [
+        "foundation_for",
+        "prerequisite_for",
+        "applied_in",
+        "overlaps_with",
+        "specializes",
+        "integrates_with"
+      ]
+    },
+    "catalog.evidence_implication_type": {
+      "name": "evidence_implication_type",
+      "schema": "catalog",
+      "values": [
+        "evidence_supports",
+        "fully_subsumes"
+      ]
+    },
+    "evidence.evidence_origin": {
+      "name": "evidence_origin",
+      "schema": "evidence",
+      "values": [
+        "direct",
+        "proxy"
+      ]
+    },
+    "evidence.evidence_strength": {
+      "name": "evidence_strength",
+      "schema": "evidence",
+      "values": [
+        "direct",
+        "supporting",
+        "incidental"
+      ]
+    },
+    "catalog.membership_role": {
+      "name": "membership_role",
+      "schema": "catalog",
+      "values": [
+        "primary",
+        "secondary"
+      ]
+    },
+    "catalog.objective_relationship_type": {
+      "name": "objective_relationship_type",
+      "schema": "catalog",
+      "values": [
+        "performance_requires",
+        "learning_precedes",
+        "supports",
+        "specializes",
+        "generalizes",
+        "related_to",
+        "co_assessed_with",
+        "often_confused_with"
+      ]
+    },
+    "evidence.observation_result": {
+      "name": "observation_result",
+      "schema": "evidence",
+      "values": [
+        "successful",
+        "partial",
+        "unsuccessful"
+      ]
+    },
+    "catalog.publication_status": {
+      "name": "publication_status",
+      "schema": "catalog",
+      "values": [
+        "draft",
+        "published",
+        "retired"
+      ]
+    },
+    "catalog.relationship_provenance": {
+      "name": "relationship_provenance",
+      "schema": "catalog",
+      "values": [
+        "sme",
+        "derived",
+        "hybrid",
+        "ai_suggested",
+        "empirical"
+      ]
+    },
+    "catalog.relationship_strength": {
+      "name": "relationship_strength",
+      "schema": "catalog",
+      "values": [
+        "hard",
+        "strong",
+        "soft",
+        "empirical"
+      ]
+    },
+    "qualification.requirement_operator": {
+      "name": "requirement_operator",
+      "schema": "qualification",
+      "values": [
+        "all_of",
+        "any_of",
+        "n_of"
+      ]
+    },
+    "assessment.task_kind": {
+      "name": "task_kind",
+      "schema": "assessment",
+      "values": [
+        "exercise",
+        "lab",
+        "challenge",
+        "mission",
+        "workplace_portfolio"
+      ]
+    },
+    "evidence.transfer_level": {
+      "name": "transfer_level",
+      "schema": "evidence",
+      "values": [
+        "same",
+        "near",
+        "far",
+        "integrated"
+      ]
+    },
+    "catalog.validation_status": {
+      "name": "validation_status",
+      "schema": "catalog",
+      "values": [
+        "pending",
+        "approved",
+        "rejected",
+        "deprecated"
+      ]
+    }
+  },
+  "schemas": {
+    "assessment": "assessment",
+    "auth": "auth",
+    "catalog": "catalog",
+    "evidence": "evidence",
+    "learner": "learner",
+    "learning": "learning",
+    "projection": "projection",
+    "qualification": "qualification"
+  },
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

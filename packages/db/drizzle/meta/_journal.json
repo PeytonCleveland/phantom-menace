@@ -15,6 +15,13 @@
       "when": 1787932537305,
       "tag": "0001_governance_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1787933364755,
+      "tag": "0002_role_level_revision_metadata",
+      "breakpoints": true
     }
   ]
 }

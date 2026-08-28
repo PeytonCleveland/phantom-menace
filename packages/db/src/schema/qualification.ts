@@ -70,6 +70,7 @@ export const roleLevelRevision = qualificationSchema.table(
     extendsRoleLevelRevisionId: uuid("extends_role_level_revision_id").references(
       (): AnyPgColumn => roleLevelRevision.id,
     ),
+    metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     publishedAt: timestamp("published_at", { withTimezone: true }),
   },

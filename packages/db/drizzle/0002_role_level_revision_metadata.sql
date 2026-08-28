@@ -1,0 +1,1 @@
+ALTER TABLE "qualification"."role_level_revision" ADD COLUMN "metadata" jsonb DEFAULT '{}'::jsonb NOT NULL;
