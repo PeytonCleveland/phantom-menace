@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
+import * as schema from "../schema/index";
 import { propagateFromObservation, recordObservation } from "../services/evidence";
-import { createLearner, objectiveId, withDb } from "./helpers";
+import { createLearner, objectiveId, releaseId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
 afterAll(async () => {
@@ -101,4 +102,72 @@ test("propagation fails when a critical-error criterion is triggered", async () 
   const propagation = await propagateFromObservation(db, observationId);
   expect(propagation.createdProxyObservationIds).toEqual([]);
   expect(propagation.skipped.some((s) => /critical/i.test(s.reason))).toBe(true);
+});
+
+test("a fully_subsumes rule with no required criteria refuses to propagate", async () => {
+  // Deliberately construct a rule the seed data would never produce: a
+  // fully_subsumes implication with zero rows in
+  // objective_evidence_implication_criterion. This is exactly the shape that
+  // let RUST-NET-L4-001 -> RUST-NET-L3-003 propagate ungated before the
+  // required criteria were seeded for it.
+  const [implication] = await db
+    .insert(schema.objectiveEvidenceImplication)
+    .values({
+      frameworkReleaseId: await releaseId(db),
+      sourceObjectiveRevisionId: await objectiveId(db, "RUST-NET-L3-001"),
+      targetObjectiveRevisionId: await objectiveId(db, "RUST-NET-L2-004"),
+      implicationType: "fully_subsumes",
+      derivedEvidenceStrength: "direct",
+      maximumTargetState: "demonstrated",
+      automatic: true,
+      validationStatus: "approved",
+      rationale: "test-only: fully_subsumes rule with no required criteria",
+    })
+    .returning({ id: schema.objectiveEvidenceImplication.id });
+  if (!implication) throw new Error("failed to insert test implication");
+
+  try {
+    const learnerId = await createLearner(db, "ungated-subsumes-guard");
+    const observationId = await recordObservation(db, {
+      learnerId,
+      objectiveRevisionId: await objectiveId(db, "RUST-NET-L3-001"),
+      evidenceSpecId: await specIdFor("RUST-NET-L3-001"),
+      result: "successful",
+      evidenceStrength: "direct",
+      independenceLevel: 3,
+      transferLevel: "near",
+      // No observable results needed: the point is that a fully_subsumes rule
+      // with zero required criteria must refuse regardless of what the source
+      // evidence established. (The unrelated RUST-NET-L3-001 -> RUST-NET-L2-003
+      // rule is also skipped here, but for the ordinary "not established"
+      // reason, since nothing was observed either.)
+      observableResults: [],
+    });
+
+    const propagation = await propagateFromObservation(db, observationId);
+    // An ungated fully_subsumes rule must not mint proxy evidence.
+    expect(propagation.createdProxyObservationIds).toEqual([]);
+    expect(propagation.skipped.some((s) => /no required criteria/i.test(s.reason))).toBe(true);
+  } finally {
+    // This implication exists only to exercise the guard; the invariant test
+    // below asserts no such rule survives in seeded data.
+    await db.delete(schema.objectiveEvidenceImplication).where(sql`id = ${implication.id}`);
+  }
+});
+
+test("every seeded fully_subsumes implication requires at least one criterion", async () => {
+  const result = await db.execute(sql`
+    SELECT i.id, slo.canonical_code AS source_code, tlo.canonical_code AS target_code
+    FROM catalog.objective_evidence_implication i
+    JOIN catalog.learning_objective_revision slor ON slor.id = i.source_objective_revision_id
+    JOIN catalog.learning_objective slo ON slo.id = slor.learning_objective_id
+    JOIN catalog.learning_objective_revision tlor ON tlor.id = i.target_objective_revision_id
+    JOIN catalog.learning_objective tlo ON tlo.id = tlor.learning_objective_id
+    WHERE i.implication_type = 'fully_subsumes'
+      AND NOT EXISTS (
+        SELECT 1 FROM catalog.objective_evidence_implication_criterion ic
+        WHERE ic.implication_id = i.id
+      )
+  `);
+  expect(result.rows).toEqual([]);
 });

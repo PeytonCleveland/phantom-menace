@@ -218,6 +218,22 @@ export async function propagateFromObservation(
       WHERE ic.implication_id = ${rule.id}
     `);
 
+    // A fully_subsumes rule with no required criteria would propagate on the
+    // strength of nothing at all. Publication validation is supposed to prevent
+    // authoring one, but the gate must not depend on that having worked —
+    // an ungated subsumption rule mints unearned qualifications.
+    //
+    // evidence_supports rules are deliberately exempt: they derive `supporting`
+    // strength capped at `developing`, a hint rather than a qualification, so
+    // zero required criteria is a legitimate authoring choice for them.
+    if (rule.implication_type === "fully_subsumes" && requiredCriteria.rows.length === 0) {
+      result.skipped.push({
+        targetObjectiveCode: targetCode,
+        reason: "fully_subsumes rule has no required criteria — refusing to propagate ungated",
+      });
+      continue;
+    }
+
     const unestablished = requiredCriteria.rows
       .filter((row) => !outcomes.established.has(String(row.id)))
       .map((row) => String(row.code));

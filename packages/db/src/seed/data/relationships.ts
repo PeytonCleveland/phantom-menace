@@ -153,6 +153,7 @@ export const evidenceImplications: EvidenceImplicationInput[] = [
     derivedEvidenceStrength: "direct",
     maximumTargetState: "demonstrated",
     requiredObservableCodes: ["framing-diagnosis"],
+    requiredCriterionCodes: ["discriminates-async-mechanisms", "rules-out-competing-explanations"],
     automatic: true,
     rationale:
       "Complex async network-I/O diagnosis subsumes representative framing diagnosis only when the task actually included framing diagnosis as a critical observable.",
