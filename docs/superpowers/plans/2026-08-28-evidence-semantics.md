@@ -247,6 +247,12 @@ test("canonical context keys sort by dimension and join with semicolons", () => 
   expect(
     canonicalContextKey({ programming_language: "rust", cloud_provider: "aws" }),
   ).toBe("cloud_provider=aws;programming_language=rust");
+  // Discriminating case: these two differ only after 'cloud', so they order
+  // oppositely under a locale collation vs byte order. Every other case here
+  // differs at character 0 and passes under either.
+  expect(canonicalContextKey({ cloud_provider: "x", cloudiness: "y" })).toBe(
+    "cloud_provider=x;cloudiness=y",
+  );
 });
 
 test("the database canonicalization agrees with the TypeScript mirror", async () => {
@@ -254,6 +260,7 @@ test("the database canonicalization agrees with the TypeScript mirror", async ()
     {},
     { cloud_provider: "aws" },
     { programming_language: "rust", cloud_provider: "aws_govcloud" },
+    { cloud_provider: "x", cloudiness: "y" },
   ];
   for (const contexts of cases) {
     const result = await db.execute(
@@ -468,8 +475,14 @@ RETURNS text
 LANGUAGE sql
 IMMUTABLE
 AS $$
+  -- COLLATE "C" is load-bearing: it makes the ordering byte-wise, matching
+  -- JavaScript's default sort. Under a locale collation (en_US.utf8) '_' is
+  -- near-ignorable, so 'cloudiness' sorts BEFORE 'cloud_provider' here while
+  -- the TS mirror orders them the other way -- a silent divergence that mints
+  -- duplicate assertion rows. It also makes IMMUTABLE sound, since a locale
+  -- collation can shift under a glibc/ICU upgrade.
   SELECT coalesce(
-    string_agg(key || '=' || value, ';' ORDER BY key),
+    string_agg(key || '=' || value, ';' ORDER BY key COLLATE "C"),
     ''
   )
   FROM jsonb_each_text(coalesce(contexts, '{}'::jsonb)) AS t(key, value);
@@ -3086,7 +3099,7 @@ diff /tmp/demo-baseline.txt /tmp/demo-after.txt
 The baseline lives in the session scratchpad; if lost, regenerate it from `git stash` on the pre-change tree.
 
 **Allowed differences, and only these:**
-1. The compiled hash (`159be765…`) — requirements now carry assurance and context, so the hash input shape changed.
+1. The compiled hash. Note it changes on EVERY reseed regardless of this pass: `role-compiler.ts` feeds `objectiveRevisionId` (a random UUID) into `hashCompiledTree`, so the "hash" is a per-database identifier, not a content hash. Pre-existing defect, deferred to the integrity pass. Do not treat a differing hash as evidence of anything.
 2. `gated by observables:` becomes `gated by criteria:` with criterion codes.
 3. The new `§1 Context` section with its four-row PASS/FAIL matrix.
 4. Frontier counts shift by the number of new cloud objectives.
