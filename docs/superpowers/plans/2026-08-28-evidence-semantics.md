@@ -2671,7 +2671,27 @@ the value to belong to the named dimension. A row claiming dimension `cloud_prov
 an `azure_region` value id is representable today. Add a unique constraint on
 `context_value (id, dimension_code)` and make all three tables use a composite FK to it.
 
-- [ ] **Step 6: Verify and commit**
+- [ ] **Step 6: Cover the positive propagation path, and document the spec-less rule**
+
+Two gaps the Task 6 re-review surfaced, both real but out of that task's scope.
+
+First: **no test asserts that a `fully_subsumes` rule CAN propagate** from any source other
+than `RUST-NET-L3-001`. Every propagation test is a refusal test. `RUST-NET-L4-001` has no
+task evidence spec, so its rule's seeded criteria are proven structurally but never
+end-to-end. Add a task evidence spec for `RUST-NET-L4-001` whose observables map to its
+criteria — including its `critical_error` criterion `no-unverified-attribution` — and a test
+asserting the rule propagates when everything is measured and successful. A gate proven only
+by what it blocks is half proven.
+
+Second: **document that propagation requires an evidence spec.** The unmeasured-critical-error
+gate means a spec-less observation (adaptive knowledge checks record this way) can never
+propagate, because `observed` is always empty for it. That is deliberate — unmeasured is not
+passed — but it silently ended propagation for `RUST-NET-L3-003 → NET-TCP-L1-003`, which
+propagated before this pass. Add a comment in `evidence.ts` stating the rule plainly, and a
+test asserting a spec-less observation does not propagate, so the behavior is pinned rather
+than incidental.
+
+- [ ] **Step 7: Verify and commit**
 
 Run `pnpm --filter @lighthouse/db db:generate && pnpm db:reset && pnpm --filter @lighthouse/db test && pnpm lint && pnpm check-types && pnpm --filter @lighthouse/db db:demo`.
 The demo's load-bearing lines must be unchanged.
