@@ -1716,6 +1716,50 @@ fix the seed, never the check.
 Task 4 also committed the two `criteria.test.ts` tests as `test.skip` for the same reason.
 **Remove both `.skip` markers** and confirm they pass.
 
+- [ ] **Step 6b: Prove the criterion-coverage check is not vacuous**
+
+`uncoveredCriteria` INNER JOINs `objective_criterion`, so with zero criteria seeded it has
+been passing on an empty set — green for the same reason the disabled check was red, but
+without anyone flagging it. Now that criteria exist, prove it actually fires: temporarily
+delete one `criterionCodes` entry from an observable in `tasks.ts`, run
+`pnpm db:reset`, and confirm publication FAILS naming that criterion. Then restore it and
+confirm it passes. Report both outcomes. A check nobody has ever seen fail is not a check.
+
+- [ ] **Step 6c: Add a publication backstop for cross-objective criterion misuse**
+
+`requireCriterion(sourceCode, ...)` prevents wiring a criterion from the wrong objective
+through the service API, but `objective_evidence_implication_criterion` has no constraint
+tying `objective_criterion_id` to the implication's `source_objective_revision_id`. A direct
+insert or fixture could silently corrupt proxy gating with nothing catching it. Add to
+`validateRelease`:
+
+```ts
+  // A required criterion must belong to the implication's SOURCE objective —
+  // it describes what the source assessment established. A criterion from any
+  // other objective silently corrupts proxy gating.
+  const foreignImplicationCriteria = await db.execute(sql`
+    SELECT i.id, c.code AS criterion_code
+    FROM catalog.objective_evidence_implication i
+    JOIN catalog.objective_evidence_implication_criterion ic ON ic.implication_id = i.id
+    JOIN catalog.objective_criterion c ON c.id = ic.objective_criterion_id
+    WHERE i.framework_release_id = ${frameworkReleaseId}
+      AND c.objective_revision_id <> i.source_objective_revision_id
+  `);
+  for (const row of foreignImplicationCriteria.rows) {
+    errors.push(
+      `implication ${row.id} requires criterion ${row.criterion_code}, which does not belong to its source objective`,
+    );
+  }
+```
+
+- [ ] **Step 6d: Correct an overstated schema comment**
+
+The comment on `objectiveCriterion` says `code` is "stable within the objective's LINEAGE,
+not merely within the revision", but `uq_objective_criterion_code` only enforces
+`(objective_revision_id, code)`. Reword it to say lineage stability is an authoring
+convention that this constraint does not enforce, so nobody later mistakes it for a
+guarantee.
+
 - [ ] **Step 7: Reset and run the tests**
 
 Run: `pnpm db:reset && pnpm --filter @lighthouse/db test`
