@@ -302,9 +302,12 @@ export const objectiveContextAllowedValue = catalogSchema.table(
 // Objective criteria — the missing middle layer between a capability claim and
 // the assessments that observe it.
 //
-// `code` is stable within the objective's LINEAGE, not merely within the
-// revision. That is what later lets objective_revision_transition say
-// "criteria unchanged -> evidence_carries_forward".
+// `code` is intended to stay stable within the objective's LINEAGE, not
+// merely within the revision — that convention is what would let
+// objective_revision_transition say "criteria unchanged -> evidence_carries_forward".
+// `uq_objective_criterion_code` only enforces uniqueness within a single
+// revision (objective_revision_id, code); lineage stability is an authoring
+// convention this constraint does not enforce.
 //
 // A `critical_error` criterion is blocking by definition; there is no severity
 // column, because a value the evaluator ignores is worse than no value at all.

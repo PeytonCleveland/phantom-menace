@@ -213,28 +213,37 @@ export async function validateRelease(
   }
 
   // Every objective must carry at least one non-critical-error criterion.
-  //
-  // NOTE (Task 4): deferred until Task 5 seeds `criteria` on every objective
-  // (see Task 4 report). Enabling this now would reject every objective in
-  // the current seed, since none carry structured criteria yet — the same
-  // reason `ObjectiveInput.criteria` is still optional and Step 11 (seeding
-  // `criteria: []`/real criteria) was pushed to Task 5. Task 5 must uncomment
-  // this block once every seeded objective supplies at least one criterion.
-  //
-  // const criterionlessObjectives = await db.execute(sql`
-  //   SELECT lo.canonical_code
-  //   FROM catalog.framework_release_objective fro
-  //   JOIN catalog.learning_objective_revision lor ON lor.id = fro.objective_revision_id
-  //   JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
-  //   WHERE fro.framework_release_id = ${frameworkReleaseId}
-  //     AND NOT EXISTS (
-  //       SELECT 1 FROM catalog.objective_criterion c
-  //       WHERE c.objective_revision_id = lor.id AND c.kind <> 'critical_error'
-  //     )
-  // `);
-  // for (const row of criterionlessObjectives.rows) {
-  //   errors.push(`objective ${row.canonical_code} has no non-critical-error criterion`);
-  // }
+  const criterionlessObjectives = await db.execute(sql`
+    SELECT lo.canonical_code
+    FROM catalog.framework_release_objective fro
+    JOIN catalog.learning_objective_revision lor ON lor.id = fro.objective_revision_id
+    JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
+    WHERE fro.framework_release_id = ${frameworkReleaseId}
+      AND NOT EXISTS (
+        SELECT 1 FROM catalog.objective_criterion c
+        WHERE c.objective_revision_id = lor.id AND c.kind <> 'critical_error'
+      )
+  `);
+  for (const row of criterionlessObjectives.rows) {
+    errors.push(`objective ${row.canonical_code} has no non-critical-error criterion`);
+  }
+
+  // A required criterion must belong to the implication's SOURCE objective —
+  // it describes what the source assessment established. A criterion from any
+  // other objective silently corrupts proxy gating.
+  const foreignImplicationCriteria = await db.execute(sql`
+    SELECT i.id, c.code AS criterion_code
+    FROM catalog.objective_evidence_implication i
+    JOIN catalog.objective_evidence_implication_criterion ic ON ic.implication_id = i.id
+    JOIN catalog.objective_criterion c ON c.id = ic.objective_criterion_id
+    WHERE i.framework_release_id = ${frameworkReleaseId}
+      AND c.objective_revision_id <> i.source_objective_revision_id
+  `);
+  for (const row of foreignImplicationCriteria.rows) {
+    errors.push(
+      `implication ${row.id} requires criterion ${row.criterion_code}, which does not belong to its source objective`,
+    );
+  }
 
   return { errors, warnings };
 }

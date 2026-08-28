@@ -127,6 +127,11 @@ export const evidenceImplications: EvidenceImplicationInput[] = [
       "partial-body",
       "data-integrity",
     ],
+    requiredCriterionCodes: [
+      "preserve-incomplete-data",
+      "multiple-frames-per-read",
+      "split-header-and-body",
+    ],
     automatic: true,
     rationale:
       "A correct framed reader necessarily exercises partial-read handling: preserving incomplete data, handling arbitrary read boundaries and multiple frames per read, without losing or duplicating bytes.",

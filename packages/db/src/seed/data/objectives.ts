@@ -26,6 +26,18 @@ export const objectives: ObjectiveInput[] = [
       "Accurately describes what the transport layer provides beyond IP",
       "Explanation holds up under probing with follow-up questions",
     ],
+    criteria: [
+      {
+        code: "describes-transport-value",
+        statement: "Accurately describes what the transport layer provides beyond IP",
+        kind: "success",
+      },
+      {
+        code: "holds-up-to-probing",
+        statement: "Explanation holds up under probing with follow-up questions",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -40,6 +52,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Correctly sequences handshake and termination steps",
       "Explains the purpose of each step, not just the order",
+    ],
+    criteria: [
+      {
+        code: "correct-handshake-sequence",
+        statement: "Correctly sequences handshake and termination steps",
+        kind: "success",
+      },
+      {
+        code: "explains-step-purpose",
+        statement: "Explains the purpose of each step, not just the order",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -56,6 +80,18 @@ export const objectives: ObjectiveInput[] = [
       "States TCP's ordering and delivery guarantees correctly",
       "Correctly describes what a single read may return",
     ],
+    criteria: [
+      {
+        code: "states-ordering-guarantees",
+        statement: "States TCP's ordering and delivery guarantees correctly",
+        kind: "success",
+      },
+      {
+        code: "describes-single-read-return",
+        statement: "Correctly describes what a single read may return",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -70,6 +106,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Explains the causal mechanism (segmentation, buffering, coalescing)",
       "States the implication: applications must frame their own messages",
+    ],
+    criteria: [
+      {
+        code: "explains-causal-mechanism",
+        statement: "Explains the causal mechanism (segmentation, buffering, coalescing)",
+        kind: "success",
+      },
+      {
+        code: "states-framing-implication",
+        statement: "States the implication: applications must frame their own messages",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -86,6 +134,18 @@ export const objectives: ObjectiveInput[] = [
       "Correct predictions across unseen read/buffer scenarios",
       "Rationale tied to byte-stream semantics rather than memorized cases",
     ],
+    criteria: [
+      {
+        code: "correct-unseen-predictions",
+        statement: "Correct predictions across unseen read/buffer scenarios",
+        kind: "success",
+      },
+      {
+        code: "rationale-tied-to-semantics",
+        statement: "Rationale tied to byte-stream semantics rather than memorized cases",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -100,6 +160,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Correctly interprets a zero-length read",
       "Explains half-closed connection behavior in both directions",
+    ],
+    criteria: [
+      {
+        code: "interprets-zero-length-read",
+        statement: "Correctly interprets a zero-length read",
+        kind: "success",
+      },
+      {
+        code: "explains-half-closed-behavior",
+        statement: "Explains half-closed connection behavior in both directions",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -116,6 +188,18 @@ export const objectives: ObjectiveInput[] = [
       "Correctly contrasts datagram boundaries with TCP's byte stream",
       "States delivery and ordering non-guarantees accurately",
     ],
+    criteria: [
+      {
+        code: "contrasts-datagram-boundaries",
+        statement: "Correctly contrasts datagram boundaries with TCP's byte stream",
+        kind: "success",
+      },
+      {
+        code: "states-non-guarantees",
+        statement: "States delivery and ordering non-guarantees accurately",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -131,6 +215,18 @@ export const objectives: ObjectiveInput[] = [
       "Correct predictions for loss, duplication, and reordering cases",
       "Identifies which applications tolerate which failure modes",
     ],
+    criteria: [
+      {
+        code: "correct-failure-predictions",
+        statement: "Correct predictions for loss, duplication, and reordering cases",
+        kind: "success",
+      },
+      {
+        code: "identifies-tolerant-applications",
+        statement: "Identifies which applications tolerate which failure modes",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -145,6 +241,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Correct classification across varied application scenarios",
       "Explicit basis for each distinction",
+    ],
+    criteria: [
+      {
+        code: "correct-protocol-classification",
+        statement: "Correct classification across varied application scenarios",
+        kind: "success",
+      },
+      {
+        code: "explicit-distinction-basis",
+        statement: "Explicit basis for each distinction",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -165,6 +273,18 @@ export const objectives: ObjectiveInput[] = [
       "Selects an appropriate inspection tool",
       "Correctly interprets connection states and endpoints",
     ],
+    criteria: [
+      {
+        code: "selects-appropriate-tool",
+        statement: "Selects an appropriate inspection tool",
+        kind: "success",
+      },
+      {
+        code: "interprets-states-and-endpoints",
+        statement: "Correctly interprets connection states and endpoints",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -179,6 +299,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Uses appropriate checks (e.g. nc, curl, ss) to test the endpoint",
       "Correctly distinguishes refusal, timeout, and success",
+    ],
+    criteria: [
+      {
+        code: "uses-appropriate-checks",
+        statement: "Uses appropriate checks (e.g. nc, curl, ss) to test the endpoint",
+        kind: "success",
+      },
+      {
+        code: "distinguishes-refusal-timeout-success",
+        statement: "Correctly distinguishes refusal, timeout, and success",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -195,6 +327,18 @@ export const objectives: ObjectiveInput[] = [
       "Accurate interpretation across representative failure variations",
       "States likely causes and next diagnostic step for each",
     ],
+    criteria: [
+      {
+        code: "accurate-failure-interpretation",
+        statement: "Accurate interpretation across representative failure variations",
+        kind: "success",
+      },
+      {
+        code: "states-causes-and-next-step",
+        statement: "States likely causes and next diagnostic step for each",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -209,6 +353,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Successfully exchanges datagrams between two endpoints",
       "Observes and correctly reports datagram boundary behavior",
+    ],
+    criteria: [
+      {
+        code: "exchanges-datagrams-successfully",
+        statement: "Successfully exchanges datagrams between two endpoints",
+        kind: "success",
+      },
+      {
+        code: "reports-boundary-behavior",
+        statement: "Observes and correctly reports datagram boundary behavior",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -230,6 +386,23 @@ export const objectives: ObjectiveInput[] = [
       "Causal conclusion is verified, not guessed",
     ],
     criticalErrors: ["declares a cause without verification"],
+    criteria: [
+      {
+        code: "plausible-tested-hypotheses",
+        statement: "Hypotheses are plausible and tested with discriminating evidence",
+        kind: "success",
+      },
+      {
+        code: "verified-causal-conclusion",
+        statement: "Causal conclusion is verified, not guessed",
+        kind: "success",
+      },
+      {
+        code: "no-unverified-cause",
+        statement: "Does not declare a cause without verification",
+        kind: "critical_error",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -244,6 +417,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Criteria are explicit and appropriate to the requirement",
       "Recommendation is substantiated with accurate findings",
+    ],
+    criteria: [
+      {
+        code: "explicit-appropriate-criteria",
+        statement: "Criteria are explicit and appropriate to the requirement",
+        kind: "success",
+      },
+      {
+        code: "substantiated-recommendation",
+        statement: "Recommendation is substantiated with accurate findings",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -262,6 +447,28 @@ export const objectives: ObjectiveInput[] = [
       "Conclusion verified under the intermittent condition",
     ],
     criticalErrors: ["ships a fix without demonstrating the causal mechanism"],
+    criteria: [
+      {
+        code: "discriminates-multilayer-explanations",
+        statement: "Systematically discriminates between multi-layer explanations",
+        kind: "success",
+      },
+      {
+        code: "handles-false-leads",
+        statement: "Handles false leads without fixating on an early hypothesis",
+        kind: "success",
+      },
+      {
+        code: "verified-under-intermittent-condition",
+        statement: "Conclusion verified under the intermittent condition",
+        kind: "success",
+      },
+      {
+        code: "no-undemonstrated-fix",
+        statement: "Does not ship a fix without demonstrating the causal mechanism",
+        kind: "critical_error",
+      },
+    ],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -276,6 +483,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Tradeoff analysis addresses interacting constraints, not one dimension",
       "Judgment substantiated with evidence and explicit criteria",
+    ],
+    criteria: [
+      {
+        code: "addresses-interacting-constraints",
+        statement: "Tradeoff analysis addresses interacting constraints, not one dimension",
+        kind: "success",
+      },
+      {
+        code: "substantiated-judgment",
+        statement: "Judgment substantiated with evidence and explicit criteria",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -292,6 +511,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Practice or standard adopted beyond a single system or team",
       "Longitudinal evidence of measurable reliability improvement",
+    ],
+    criteria: [
+      {
+        code: "adopted-beyond-single-team",
+        statement: "Practice or standard adopted beyond a single system or team",
+        kind: "success",
+      },
+      {
+        code: "longitudinal-reliability-evidence",
+        statement: "Longitudinal evidence of measurable reliability improvement",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -312,6 +543,18 @@ export const objectives: ObjectiveInput[] = [
       "Maps TcpStream read/write behavior to TCP semantics correctly",
       "Explanation survives probing with edge cases (short reads, EOF)",
     ],
+    criteria: [
+      {
+        code: "maps-behavior-to-semantics",
+        statement: "Maps TcpStream read/write behavior to TCP semantics correctly",
+        kind: "success",
+      },
+      {
+        code: "survives-edge-case-probing",
+        statement: "Explanation survives probing with edge cases (short reads, EOF)",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -327,6 +570,18 @@ export const objectives: ObjectiveInput[] = [
       "Accurately reports intermediate buffer states and counts",
       "Accounts for leftover and unconsumed bytes, not just the final state",
     ],
+    criteria: [
+      {
+        code: "reports-buffer-states-and-counts",
+        statement: "Accurately reports intermediate buffer states and counts",
+        kind: "success",
+      },
+      {
+        code: "accounts-for-leftover-bytes",
+        statement: "Accounts for leftover and unconsumed bytes, not just the final state",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -341,6 +596,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Correctly distinguishes Ok(n), Ok(0), and Err cases",
       "States caller obligations for each condition",
+    ],
+    criteria: [
+      {
+        code: "distinguishes-ok-err-cases",
+        statement: "Correctly distinguishes Ok(n), Ok(0), and Err cases",
+        kind: "success",
+      },
+      {
+        code: "states-caller-obligations",
+        statement: "States caller obligations for each condition",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -361,6 +628,18 @@ export const objectives: ObjectiveInput[] = [
       "Connection succeeds against a live endpoint",
       "Connection failure surfaces as a handled error, not a panic",
     ],
+    criteria: [
+      {
+        code: "connection-succeeds",
+        statement: "Connection succeeds against a live endpoint",
+        kind: "success",
+      },
+      {
+        code: "failure-handled-not-panicked",
+        statement: "Connection failure surfaces as a handled error, not a panic",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -377,6 +656,23 @@ export const objectives: ObjectiveInput[] = [
       "Buffer reuse does not expose stale bytes",
     ],
     criticalErrors: ["processes the full buffer regardless of bytes read"],
+    criteria: [
+      {
+        code: "bounds-by-returned-count",
+        statement: "Only the returned count of bytes is treated as valid data",
+        kind: "success",
+      },
+      {
+        code: "no-stale-byte-exposure",
+        statement: "Buffer reuse does not expose stale bytes",
+        kind: "success",
+      },
+      {
+        code: "no-full-buffer-processing",
+        statement: "Does not process the full buffer regardless of bytes read",
+        kind: "critical_error",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -396,6 +692,28 @@ export const objectives: ObjectiveInput[] = [
       "assumes one read returns one complete message",
       "discards bytes from an incomplete unit",
     ],
+    criteria: [
+      {
+        code: "no-one-read-one-message",
+        statement: "Does not assume one read returns one complete message",
+        kind: "critical_error",
+      },
+      {
+        code: "no-discarded-bytes",
+        statement: "Does not discard bytes from an incomplete unit",
+        kind: "critical_error",
+      },
+      {
+        code: "preserves-incomplete-data",
+        statement: "Incomplete data is preserved across successive reads",
+        kind: "success",
+      },
+      {
+        code: "correct-for-any-split",
+        statement: "Behavior is correct for any read-boundary split",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -412,6 +730,23 @@ export const objectives: ObjectiveInput[] = [
       "Interrupted and WouldBlock conditions are handled appropriately",
     ],
     criticalErrors: ["treats EOF as an infinite-loop read of zero bytes"],
+    criteria: [
+      {
+        code: "eof-handled-per-protocol",
+        statement: "EOF is detected and handled according to protocol state",
+        kind: "success",
+      },
+      {
+        code: "handles-interrupted-wouldblock",
+        statement: "Interrupted and WouldBlock conditions are handled appropriately",
+        kind: "success",
+      },
+      {
+        code: "no-eof-infinite-loop",
+        statement: "Does not treat EOF as an infinite-loop read of zero bytes",
+        kind: "critical_error",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -426,6 +761,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "All bytes of the logical message are delivered exactly once",
       "Write errors are surfaced, not swallowed",
+    ],
+    criteria: [
+      {
+        code: "delivers-message-exactly-once",
+        statement: "All bytes of the logical message are delivered exactly once",
+        kind: "success",
+      },
+      {
+        code: "surfaces-write-errors",
+        statement: "Write errors are surfaced, not swallowed",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -442,6 +789,18 @@ export const objectives: ObjectiveInput[] = [
       "Configuration satisfies the stated requirements",
       "Resulting behavior is verified, including the timeout path",
     ],
+    criteria: [
+      {
+        code: "satisfies-stated-requirements",
+        statement: "Configuration satisfies the stated requirements",
+        kind: "success",
+      },
+      {
+        code: "verifies-timeout-path",
+        statement: "Resulting behavior is verified, including the timeout path",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -456,6 +815,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Datagrams are exchanged with boundaries preserved",
       "Receive-buffer sizing and truncation behavior handled correctly",
+    ],
+    criteria: [
+      {
+        code: "preserves-datagram-boundaries",
+        statement: "Datagrams are exchanged with boundaries preserved",
+        kind: "success",
+      },
+      {
+        code: "handles-truncation-correctly",
+        statement: "Receive-buffer sizing and truncation behavior handled correctly",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -490,6 +861,38 @@ export const objectives: ObjectiveInput[] = [
       "silently loses or duplicates bytes",
       "declares success without verification",
     ],
+    criteria: [
+      {
+        code: "preserve-incomplete-data",
+        statement: "Incomplete frame data is preserved across arbitrary read boundaries",
+        kind: "success",
+      },
+      {
+        code: "multiple-frames-per-read",
+        statement: "Multiple complete frames within one read are all processed",
+        kind: "success",
+      },
+      {
+        code: "split-header-and-body",
+        statement: "Frame headers and bodies split across reads are handled",
+        kind: "success",
+      },
+      {
+        code: "eof-and-io-errors",
+        statement: "EOF and I/O errors are handled according to protocol state",
+        kind: "success",
+      },
+      {
+        code: "no-data-loss",
+        statement: "No bytes are lost, duplicated, or reordered",
+        kind: "critical_error",
+      },
+      {
+        code: "boundary-verification",
+        statement: "Behavior is verified with tests covering varied read boundaries",
+        kind: "verification",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -505,6 +908,23 @@ export const objectives: ObjectiveInput[] = [
       "Frames are well-formed and parseable by a conforming reader",
       "Partial writes are completed; no interleaved or truncated frames",
       "Write failures are surfaced with usable error context",
+    ],
+    criteria: [
+      {
+        code: "well-formed-parseable-frames",
+        statement: "Frames are well-formed and parseable by a conforming reader",
+        kind: "success",
+      },
+      {
+        code: "no-interleaved-truncated-frames",
+        statement: "Partial writes are completed; no interleaved or truncated frames",
+        kind: "success",
+      },
+      {
+        code: "surfaces-failures-with-context",
+        statement: "Write failures are surfaced with usable error context",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -523,6 +943,28 @@ export const objectives: ObjectiveInput[] = [
       "Correction is verified against the original failure mode",
     ],
     criticalErrors: ["guesses a fix without demonstrating the cause"],
+    criteria: [
+      {
+        code: "reproduces-or-characterizes-failure",
+        statement: "Failure is reproduced deterministically or characterized statistically",
+        kind: "success",
+      },
+      {
+        code: "demonstrates-causal-mechanism",
+        statement: "Causal mechanism is demonstrated with discriminating evidence",
+        kind: "success",
+      },
+      {
+        code: "verifies-correction-against-failure",
+        statement: "Correction is verified against the original failure mode",
+        kind: "success",
+      },
+      {
+        code: "no-guessed-fix",
+        statement: "Does not guess a fix without demonstrating the cause",
+        kind: "critical_error",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -538,6 +980,23 @@ export const objectives: ObjectiveInput[] = [
       "Tests cover read-boundary, EOF, and error-path edge cases",
       "Each test is traceable to a specific failure mode",
       "Tests are deterministic",
+    ],
+    criteria: [
+      {
+        code: "covers-key-edge-cases",
+        statement: "Tests cover read-boundary, EOF, and error-path edge cases",
+        kind: "success",
+      },
+      {
+        code: "traceable-to-failure-mode",
+        statement: "Each test is traceable to a specific failure mode",
+        kind: "success",
+      },
+      {
+        code: "deterministic-tests",
+        statement: "Tests are deterministic",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -560,6 +1019,28 @@ export const objectives: ObjectiveInput[] = [
       "Conclusion and correction verified under realistic load",
     ],
     criticalErrors: ["attributes the failure to an unverified mechanism"],
+    criteria: [
+      {
+        code: "discriminates-async-mechanisms",
+        statement: "Discriminates among interacting async failure mechanisms",
+        kind: "success",
+      },
+      {
+        code: "rules-out-competing-explanations",
+        statement: "Evidence rules out plausible competing explanations",
+        kind: "success",
+      },
+      {
+        code: "verified-under-realistic-load",
+        statement: "Conclusion and correction verified under realistic load",
+        kind: "success",
+      },
+      {
+        code: "no-unverified-attribution",
+        statement: "Does not attribute the failure to an unverified mechanism",
+        kind: "critical_error",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -574,6 +1055,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Tradeoffs are justified with measurements, not intuition alone",
       "Adaptation preserves correctness properties (no data loss or duplication)",
+    ],
+    criteria: [
+      {
+        code: "justified-with-measurements",
+        statement: "Tradeoffs are justified with measurements, not intuition alone",
+        kind: "success",
+      },
+      {
+        code: "preserves-correctness-properties",
+        statement: "Adaptation preserves correctness properties (no data loss or duplication)",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -590,6 +1083,18 @@ export const objectives: ObjectiveInput[] = [
       "End-to-end behavior verified across component boundaries",
       "Partial-failure paths (disconnect, retry, backpressure) behave correctly",
     ],
+    criteria: [
+      {
+        code: "verified-across-boundaries",
+        statement: "End-to-end behavior verified across component boundaries",
+        kind: "success",
+      },
+      {
+        code: "correct-partial-failure-paths",
+        statement: "Partial-failure paths (disconnect, retry, backpressure) behave correctly",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -604,6 +1109,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Abstraction adopted by multiple production systems",
       "Correctness validated across adopters over time",
+    ],
+    criteria: [
+      {
+        code: "adopted-by-multiple-systems",
+        statement: "Abstraction adopted by multiple production systems",
+        kind: "success",
+      },
+      {
+        code: "validated-across-adopters",
+        statement: "Correctness validated across adopters over time",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -620,6 +1137,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Practice adopted across multiple teams",
       "Measurable defect reduction over time attributable to the practice",
+    ],
+    criteria: [
+      {
+        code: "adopted-across-teams",
+        statement: "Practice adopted across multiple teams",
+        kind: "success",
+      },
+      {
+        code: "measurable-defect-reduction",
+        statement: "Measurable defect reduction over time attributable to the practice",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -640,6 +1169,18 @@ export const objectives: ObjectiveInput[] = [
       "Sub-slices are bounded by valid counts",
       "Code compiles without fighting the borrow checker via unnecessary clones",
     ],
+    criteria: [
+      {
+        code: "bounded-by-valid-counts",
+        statement: "Sub-slices are bounded by valid counts",
+        kind: "success",
+      },
+      {
+        code: "compiles-without-unnecessary-clones",
+        statement: "Code compiles without fighting the borrow checker via unnecessary clones",
+        kind: "success",
+      },
+    ],
     primaryCompetencyCode: "rust.ownership-and-borrowing",
   },
   {
@@ -654,6 +1195,18 @@ export const objectives: ObjectiveInput[] = [
     successCriteria: [
       "Errors are propagated or handled deliberately, never unwrapped on I/O paths",
       "Error kinds with distinct handling requirements are distinguished",
+    ],
+    criteria: [
+      {
+        code: "deliberate-error-handling",
+        statement: "Errors are propagated or handled deliberately, never unwrapped on I/O paths",
+        kind: "success",
+      },
+      {
+        code: "distinguishes-error-kinds",
+        statement: "Error kinds with distinct handling requirements are distinguished",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: "rust.error-handling",
   },

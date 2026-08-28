@@ -50,8 +50,7 @@ export interface ObjectiveInput {
   /** Canonical code of the primary competency. */
   primaryCompetencyCode: string;
   sortOrder?: number;
-  // Optional until Task 5 seeds criteria for every objective; then required.
-  criteria?: CriterionInput[];
+  criteria: CriterionInput[];
 }
 
 export interface ObjectiveRelationshipInput {
