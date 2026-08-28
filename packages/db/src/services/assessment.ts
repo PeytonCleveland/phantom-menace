@@ -6,7 +6,8 @@ import type { TaskSeed } from "../seed/data/tasks";
 /**
  * Task creation (spec §12.15, §13.4).
  * Enforces: evidence ceiling must be at least the level of every directly
- * measured objective, and direct Class B/C mappings must declare observables.
+ * measured objective. (Observable/criterion-coverage validation for direct
+ * evidence mappings lives in publication.ts, not here — see Task 10.)
  */
 
 export interface CreatedTask {
@@ -65,7 +66,7 @@ export async function createTask(
     const evidenceSpecIdByObjectiveCode = new Map<string, string>();
     for (const spec of seed.evidenceSpecs) {
       const objectiveResult = await tx.execute(sql`
-        SELECT lor.id, lor.mastery_level, lor.assurance_class
+        SELECT lor.id, lor.mastery_level
         FROM catalog.learning_objective_revision lor
         JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
         JOIN catalog.framework_release_objective fro ON fro.objective_revision_id = lor.id
@@ -82,17 +83,6 @@ export async function createTask(
       ) {
         throw new Error(
           `task ${seed.code} design ceiling ${seed.designEvidenceCeiling} is below directly measured objective ${spec.objectiveCode} (L${objective.mastery_level})`,
-        );
-      }
-
-      // §13.4: Class B/C direct evidence mappings must have observables.
-      if (
-        spec.evidenceStrength === "direct" &&
-        ["B", "C"].includes(String(objective.assurance_class)) &&
-        (spec.observables ?? []).length === 0
-      ) {
-        throw new Error(
-          `direct evidence spec for Class ${objective.assurance_class} objective ${spec.objectiveCode} must declare observables`,
         );
       }
 

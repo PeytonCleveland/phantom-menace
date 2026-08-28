@@ -229,7 +229,11 @@ export const learningObjectiveRevision = catalogSchema.table(
     verbCode: text("verb_code")
       .notNull()
       .references(() => verbDefinition.code),
-    assuranceClass: char("assurance_class", { length: 1 }).notNull(),
+    // Advisory. It seeds the initial value when authoring a role requirement
+    // and governs nothing on its own — how much proof a qualification demands
+    // lives on qualification.objective_requirement.required_assurance_class.
+    // A = Lightweight, B = Performance, C = High Assurance.
+    defaultAssuranceClass: char("default_assurance_class", { length: 1 }).notNull(),
     performanceObject: text("performance_object").notNull().default(""),
     conditions: jsonb("conditions").notNull().default(sql`'{}'::jsonb`),
     performanceModes: text("performance_modes").array().notNull().default(sql`ARRAY[]::text[]`),
@@ -241,7 +245,7 @@ export const learningObjectiveRevision = catalogSchema.table(
     unique("uq_objective_revision_no").on(t.learningObjectiveId, t.revisionNo),
     check("ck_objective_revision_no_positive", sql`revision_no > 0`),
     check("ck_objective_mastery_level", sql`mastery_level BETWEEN 1 AND 5`),
-    check("ck_objective_assurance_class", sql`assurance_class IN ('A', 'B', 'C')`),
+    check("ck_objective_default_assurance_class", sql`default_assurance_class IN ('A', 'B', 'C')`),
   ],
 );
 
@@ -324,6 +328,29 @@ export const objectiveCriterion = catalogSchema.table(
     sortOrder: integer("sort_order"),
   },
   (t) => [unique("uq_objective_criterion_code").on(t.objectiveRevisionId, t.code)],
+);
+
+// Typed, not jsonb: these drive publication validation, which makes them core
+// governing semantics rather than flexible metadata. They follow from the
+// CLAIM — an `implement` objective inherently requires practical performance
+// regardless of who is hiring.
+export const objectiveClaimEvidenceConstraint = catalogSchema.table(
+  "objective_claim_evidence_constraint",
+  {
+    objectiveRevisionId: uuid("objective_revision_id")
+      .primaryKey()
+      .references(() => learningObjectiveRevision.id),
+    practicalPerformanceRequired: boolean("practical_performance_required").notNull(),
+    constructedResponseSupported: boolean("constructed_response_supported").notNull(),
+    multipleChoiceAloneSufficient: boolean("multiple_choice_alone_sufficient").notNull(),
+    directObservationPossible: boolean("direct_observation_possible").notNull(),
+  },
+  () => [
+    check(
+      "ck_claim_constraint_coherent",
+      sql`NOT (practical_performance_required AND multiple_choice_alone_sufficient)`,
+    ),
+  ],
 );
 
 export const competencyObjectiveMembership = catalogSchema.table(

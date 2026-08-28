@@ -41,7 +41,7 @@ export interface ObjectiveInput {
   statement: string;
   masteryLevel: 1 | 2 | 3 | 4 | 5;
   verbCode: string;
-  assuranceClass: "A" | "B" | "C";
+  defaultAssuranceClass: "A" | "B" | "C";
   performanceObject?: string;
   conditions?: Record<string, unknown>;
   tags?: string[];
@@ -49,6 +49,12 @@ export interface ObjectiveInput {
   primaryCompetencyCode: string;
   sortOrder?: number;
   criteria: CriterionInput[];
+  claimEvidenceConstraints: {
+    practicalPerformanceRequired: boolean;
+    constructedResponseSupported: boolean;
+    multipleChoiceAloneSufficient: boolean;
+    directObservationPossible: boolean;
+  };
 }
 
 export interface ObjectiveRelationshipInput {
@@ -192,7 +198,7 @@ export class CatalogSession {
           statement: input.statement,
           masteryLevel: input.masteryLevel,
           verbCode: input.verbCode,
-          assuranceClass: input.assuranceClass,
+          defaultAssuranceClass: input.defaultAssuranceClass,
           performanceObject: input.performanceObject ?? "",
           conditions: input.conditions ?? {},
           tags: input.tags ?? [],
@@ -227,6 +233,11 @@ export class CatalogSession {
         if (!created) throw new Error(`failed to insert criterion ${criterion.code}`);
         criterionIds.push([`${input.code}:${criterion.code}`, created.id]);
       }
+
+      await tx.insert(s.objectiveClaimEvidenceConstraint).values({
+        objectiveRevisionId: revision.id,
+        ...input.claimEvidenceConstraints,
+      });
 
       return revision.id;
     });

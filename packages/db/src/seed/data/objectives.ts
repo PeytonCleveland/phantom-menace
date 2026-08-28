@@ -20,7 +20,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain the purpose of the transport layer, including what guarantees it adds over raw IP delivery and why applications depend on it.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "the transport layer's role in the network stack",
     criteria: [
       {
@@ -43,7 +49,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain TCP connection establishment and termination, including the three-way handshake, orderly shutdown, and what each step accomplishes.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP connection lifecycle",
     criteria: [
       {
@@ -66,7 +78,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain TCP byte-stream semantics: what ordering and delivery guarantees TCP provides, and what a read from a TCP socket can and cannot assume.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP byte-stream semantics",
     criteria: [
       {
@@ -89,7 +107,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain why TCP does not preserve application message boundaries and what this implies for any protocol built on top of TCP.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "absence of message boundaries in TCP",
     criteria: [
       {
@@ -112,7 +136,13 @@ export const objectives: ObjectiveInput[] = [
       "Given a sequence of TCP reads and buffer states, predict whether a complete application message is available and explain how partial reads and writes affect the result.",
     masteryLevel: 1,
     verbCode: "predict",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "partial read/write behavior over TCP",
     criteria: [
       {
@@ -135,7 +165,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain EOF, shutdown, and half-closed TCP connections, including what a zero-length read means and how each side's close affects the other.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP EOF and shutdown behavior",
     criteria: [
       {
@@ -158,7 +194,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain UDP datagram semantics: message boundaries, lack of delivery and ordering guarantees, and what a UDP receive returns.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP datagram semantics",
     criteria: [
       {
@@ -181,7 +223,13 @@ export const objectives: ObjectiveInput[] = [
       "Given a UDP communication scenario, predict the consequences of datagram loss, duplication, and reordering for the application.",
     masteryLevel: 1,
     verbCode: "predict",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP failure modes",
     criteria: [
       {
@@ -204,7 +252,13 @@ export const objectives: ObjectiveInput[] = [
       "Distinguish appropriate TCP and UDP use cases for representative application requirements and state the decisive difference driving each choice.",
     masteryLevel: 1,
     verbCode: "distinguish",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "transport protocol selection",
     criteria: [
       {
@@ -231,7 +285,13 @@ export const objectives: ObjectiveInput[] = [
       "Using standard tools (such as ss, netstat, or lsof), inspect active TCP connection state on a host and correctly interpret connection states, addresses, and ports.",
     masteryLevel: 2,
     verbCode: "interpret",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "live TCP connection state",
     criteria: [
       {
@@ -254,7 +314,13 @@ export const objectives: ObjectiveInput[] = [
       "Verify whether a TCP endpoint is reachable and accepting connections, distinguishing connection refusal, timeout, and successful establishment.",
     masteryLevel: 2,
     verbCode: "verify",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP endpoint reachability",
     criteria: [
       {
@@ -277,7 +343,13 @@ export const objectives: ObjectiveInput[] = [
       "Interpret common TCP connection failures (connection refused, reset, timeout) and state the most likely causes of each.",
     masteryLevel: 2,
     verbCode: "interpret",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP failure signals",
     criteria: [
       {
@@ -300,7 +372,13 @@ export const objectives: ObjectiveInput[] = [
       "Send, receive, and inspect UDP datagrams in a bounded environment using standard tooling, confirming datagram boundaries and observing loss behavior.",
     masteryLevel: 2,
     verbCode: "execute",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP datagram exchange",
     criteria: [
       {
@@ -327,7 +405,13 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose a representative TCP connectivity failure in an unfamiliar environment: form hypotheses, gather discriminating evidence, identify the causal mechanism, and verify the conclusion.",
     masteryLevel: 3,
     verbCode: "diagnose",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP connectivity failure",
     criteria: [
       {
@@ -355,7 +439,13 @@ export const objectives: ObjectiveInput[] = [
       "Evaluate transport options for a bounded application requirement and justify the selection against explicit reliability, latency, and complexity criteria.",
     masteryLevel: 3,
     verbCode: "evaluate",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "transport approach selection",
     criteria: [
       {
@@ -378,7 +468,13 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose intermittent or multi-layer transport failures under ambiguous or incomplete evidence, ruling out competing explanations across layers.",
     masteryLevel: 4,
     verbCode: "diagnose",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "complex transport failure",
     criteria: [
       {
@@ -411,7 +507,13 @@ export const objectives: ObjectiveInput[] = [
       "Evaluate competing transport designs under interacting reliability, latency, and operational constraints and justify tradeoffs for a materially novel context.",
     masteryLevel: 4,
     verbCode: "evaluate",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "transport tradeoff analysis",
     criteria: [
       {
@@ -435,7 +537,13 @@ export const objectives: ObjectiveInput[] = [
       "Establish and validate transport engineering practices, standards, or abstractions that measurably improve reliability across multiple systems or teams.",
     masteryLevel: 5,
     verbCode: "establish",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "organizational transport engineering practice",
     criteria: [
       {
@@ -462,7 +570,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain how Rust's TcpStream represents a TCP byte stream, including what read and write calls correspond to at the transport level.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TcpStream's byte-stream model",
     criteria: [
       {
@@ -485,7 +599,13 @@ export const objectives: ObjectiveInput[] = [
       "Trace bytes through a simple Rust read-buffer operation, accounting for the buffer contents, the returned byte count, and any leftover data at each step.",
     masteryLevel: 1,
     verbCode: "trace",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "read-buffer state transitions",
     criteria: [
       {
@@ -508,7 +628,13 @@ export const objectives: ObjectiveInput[] = [
       "Explain how Rust represents I/O success, EOF, and error conditions through Result, Ok(0), and io::Error, and what each obligates the caller to handle.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "Rust I/O result representation",
     criteria: [
       {
@@ -535,7 +661,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement code that creates and connects a Rust TcpStream to a specified endpoint, handling connection errors without panicking.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TcpStream connection",
     criteria: [
       {
@@ -558,7 +690,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement code that reads bytes from a TcpStream into a mutable buffer and correctly uses the returned byte count to bound further processing.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "buffered socket reads",
     criteria: [
       {
@@ -586,7 +724,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement reading logic over a Rust TcpStream that correctly handles partial reads, accumulating data until a complete logical unit is available.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "partial-read handling",
     criteria: [
       {
@@ -619,7 +763,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement socket-handling code that correctly handles EOF (Ok(0)) and common io::Error conditions, terminating or recovering according to protocol state.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "EOF and I/O error handling",
     criteria: [
       {
@@ -647,7 +797,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement writing logic that delivers a complete logical message over a TcpStream despite partial writes, using write_all or an equivalent verified loop.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "partial-write handling",
     criteria: [
       {
@@ -670,7 +826,13 @@ export const objectives: ObjectiveInput[] = [
       "Configure a Rust TCP socket's blocking behavior, read/write timeouts, and shutdown semantics to satisfy stated requirements, and verify the resulting behavior.",
     masteryLevel: 2,
     verbCode: "configure",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "socket configuration",
     criteria: [
       {
@@ -693,7 +855,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement sending and receiving datagrams with Rust's UdpSocket, respecting datagram boundaries and handling truncation behavior correctly.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP datagram exchange in Rust",
     criteria: [
       {
@@ -720,7 +888,13 @@ export const objectives: ObjectiveInput[] = [
       "Independently implement a framed-message reader over a Rust TcpStream that preserves incomplete data across reads, handles multiple frames per read, handles EOF and I/O errors correctly, and does not lose or duplicate bytes.",
     masteryLevel: 3,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "framed-message reader",
     conditions: {
       context: "unfamiliar but reasonably scoped codebase",
@@ -767,7 +941,13 @@ export const objectives: ObjectiveInput[] = [
       "Independently implement framed-message writing over a Rust TcpStream that emits well-formed frames, completes partial writes, and surfaces write failures correctly.",
     masteryLevel: 3,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "framed-message writer",
     criteria: [
       {
@@ -795,7 +975,13 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose a representative TCP framing defect in an unfamiliar Rust service: reproduce the failure, isolate the causal mechanism, and verify the correction.",
     masteryLevel: 3,
     verbCode: "diagnose",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP framing defect",
     criteria: [
       {
@@ -828,7 +1014,13 @@ export const objectives: ObjectiveInput[] = [
       "Design tests for Rust network-I/O code that exercise partial reads, split frames, EOF, and error paths, with traceability from each test to the failure mode it guards against.",
     masteryLevel: 3,
     verbCode: "design",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "network-I/O test design",
     criteria: [
       {
@@ -860,7 +1052,13 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose complex asynchronous Rust network-I/O failures involving cancellation, framing, timeout, or backpressure interactions under ambiguous evidence.",
     masteryLevel: 4,
     verbCode: "diagnose",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "async network-I/O failure",
     criteria: [
       {
@@ -893,7 +1091,13 @@ export const objectives: ObjectiveInput[] = [
       "Evaluate and adapt a network-I/O architecture under competing performance and reliability constraints, justifying tradeoffs with measurements.",
     masteryLevel: 4,
     verbCode: "evaluate",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "network-I/O architecture",
     criteria: [
       {
@@ -916,7 +1120,13 @@ export const objectives: ObjectiveInput[] = [
       "Integrate robust framed I/O into a distributed Rust service that behaves correctly under partial failure, including reconnection, retry, and backpressure handling.",
     masteryLevel: 4,
     verbCode: "integrate",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "framed I/O in a distributed service",
     criteria: [
       {
@@ -939,7 +1149,13 @@ export const objectives: ObjectiveInput[] = [
       "Design and validate reusable Rust network-I/O abstractions that are adopted across multiple production systems, with evidence of correctness and adoption.",
     masteryLevel: 5,
     verbCode: "design",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "reusable network-I/O abstraction",
     criteria: [
       {
@@ -963,7 +1179,13 @@ export const objectives: ObjectiveInput[] = [
       "Establish engineering practices, standards, or tooling that measurably reduce network-protocol defects across multiple teams, with longitudinal evidence.",
     masteryLevel: 5,
     verbCode: "establish",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "organizational network-protocol practice",
     criteria: [
       {
@@ -990,7 +1212,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement buffer-handling functions that use mutable slices safely: correct sub-slicing by returned counts, no aliasing violations, and no reliance on stale data.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "mutable slice handling",
     criteria: [
       {
@@ -1013,7 +1241,13 @@ export const objectives: ObjectiveInput[] = [
       "Implement I/O code that handles Result and io::Error values idiomatically: propagation with ?, matching on error kinds where behavior differs, and no unwrap on fallible I/O paths.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "Result and io::Error handling",
     criteria: [
       {

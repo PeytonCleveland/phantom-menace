@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import type { Database } from "../client";
 import * as s from "../schema/index";
+import { findContextValueId } from "./context";
 
 /**
  * Role publication compiler (spec §21).
@@ -20,6 +21,12 @@ export interface ObjectivePolicy {
   minimumIndependence?: 0 | 1 | 2 | 3 | 4;
   minimumTransferDistance?: (typeof s.transferDistanceEnum.enumValues)[number];
   minimumPerformanceScope?: (typeof s.performanceScopeEnum.enumValues)[number];
+  requiredAssuranceClass?: "A" | "B" | "C";
+  contexts?: Array<{
+    dimensionCode: string;
+    valueCode?: string;
+    minimumDistinctValues?: number;
+  }>;
 }
 
 export type RequirementMemberSpec =
@@ -60,6 +67,7 @@ interface ResolvedObjective {
   objectiveRevisionId: string;
   canonicalCode: string;
   masteryLevel: number;
+  defaultAssuranceClass: string;
   sourceCapabilitySetRevisionId: string | null;
 }
 
@@ -70,7 +78,8 @@ interface CompiledGroupNode {
   requirements: Array<{
     objectiveRevisionId: string;
     canonicalCode: string;
-    policy: Required<ObjectivePolicy>;
+    policy: Required<Omit<ObjectivePolicy, "contexts">>;
+    contexts: ObjectivePolicy["contexts"];
   }>;
   children: CompiledGroupNode[];
 }
@@ -192,29 +201,103 @@ export class RoleCompiler {
     const nodeRequirements: CompiledGroupNode["requirements"] = [];
 
     for (const { objective, policy } of resolved.values()) {
-      const fullPolicy: Required<ObjectivePolicy> = {
+      const fullPolicy: Required<Omit<ObjectivePolicy, "contexts">> = {
         directEvidenceRequired: policy.directEvidenceRequired ?? false,
         proxyEvidenceAllowed: policy.proxyEvidenceAllowed ?? true,
         minimumIndependence: policy.minimumIndependence ?? 3,
         minimumTransferDistance: policy.minimumTransferDistance ?? "near",
         minimumPerformanceScope: policy.minimumPerformanceScope ?? "focused",
+        requiredAssuranceClass:
+          policy.requiredAssuranceClass ?? (objective.defaultAssuranceClass as "A" | "B" | "C"),
       };
 
-      await this.db.insert(s.objectiveRequirement).values({
-        requirementGroupId: group.id,
-        objectiveRevisionId: objective.objectiveRevisionId,
-        sourceCapabilitySetRevisionId: objective.sourceCapabilitySetRevisionId,
-        directEvidenceRequired: fullPolicy.directEvidenceRequired,
-        proxyEvidenceAllowed: fullPolicy.proxyEvidenceAllowed,
-        minimumIndependence: fullPolicy.minimumIndependence,
-        minimumTransferDistance: fullPolicy.minimumTransferDistance,
-        minimumPerformanceScope: fullPolicy.minimumPerformanceScope,
-      });
+      const [requirement] = await this.db
+        .insert(s.objectiveRequirement)
+        .values({
+          requirementGroupId: group.id,
+          objectiveRevisionId: objective.objectiveRevisionId,
+          sourceCapabilitySetRevisionId: objective.sourceCapabilitySetRevisionId,
+          directEvidenceRequired: fullPolicy.directEvidenceRequired,
+          proxyEvidenceAllowed: fullPolicy.proxyEvidenceAllowed,
+          minimumIndependence: fullPolicy.minimumIndependence,
+          minimumTransferDistance: fullPolicy.minimumTransferDistance,
+          minimumPerformanceScope: fullPolicy.minimumPerformanceScope,
+          requiredAssuranceClass: fullPolicy.requiredAssuranceClass,
+        })
+        .returning({ id: s.objectiveRequirement.id });
+      if (!requirement) {
+        throw new Error(`failed to insert objective requirement for ${objective.canonicalCode}`);
+      }
+
+      for (const context of policy.contexts ?? []) {
+        const policyRow = await this.db.execute(sql`
+          SELECT policy FROM catalog.objective_context_policy
+          WHERE objective_revision_id = ${objective.objectiveRevisionId}
+            AND dimension_code = ${context.dimensionCode}
+        `);
+        if (policyRow.rows[0]?.policy !== "required") {
+          throw new Error(
+            `role requirement pins ${context.dimensionCode} on ${objective.canonicalCode}, but the objective does not declare it required`,
+          );
+        }
+        // Allowed values inherit downward: permitting aws permits aws_govcloud.
+        if (context.valueCode) {
+          const permitted = await this.db.execute(sql`
+            WITH RECURSIVE allowed AS (
+              SELECT cv.id
+              FROM catalog.objective_context_allowed_value acv
+              JOIN catalog.context_value cv ON cv.id = acv.context_value_id
+              WHERE acv.objective_revision_id = ${objective.objectiveRevisionId}
+                AND acv.dimension_code = ${context.dimensionCode}
+              UNION ALL
+              SELECT child.id FROM catalog.context_value child
+              JOIN allowed ON child.parent_value_id = allowed.id
+            )
+            SELECT
+              (SELECT count(*) FROM catalog.objective_context_allowed_value
+               WHERE objective_revision_id = ${objective.objectiveRevisionId}
+                 AND dimension_code = ${context.dimensionCode}) AS whitelist_size,
+              (SELECT count(*) FROM allowed a
+               JOIN catalog.context_value cv ON cv.id = a.id
+               WHERE cv.code = ${context.valueCode}) AS permitted
+          `);
+          const row = permitted.rows[0];
+          if (Number(row?.whitelist_size ?? 0) > 0 && Number(row?.permitted ?? 0) === 0) {
+            throw new Error(
+              `role requirement pins ${context.dimensionCode}=${context.valueCode} on ${objective.canonicalCode}, which the objective's allowed-value whitelist does not permit`,
+            );
+          }
+        }
+
+        // A breadth demand cannot exceed the values the dimension actually has.
+        const minimumDistinctValues = context.minimumDistinctValues ?? 1;
+        if (minimumDistinctValues > 1) {
+          const available = await this.db.execute(sql`
+            SELECT count(*) AS n FROM catalog.context_value
+            WHERE dimension_code = ${context.dimensionCode}
+          `);
+          if (Number(available.rows[0]?.n ?? 0) < minimumDistinctValues) {
+            throw new Error(
+              `role requirement demands ${minimumDistinctValues} distinct ${context.dimensionCode} values, but the dimension has fewer`,
+            );
+          }
+        }
+
+        await this.db.insert(s.objectiveRequirementContext).values({
+          objectiveRequirementId: requirement.id,
+          dimensionCode: context.dimensionCode,
+          contextValueId: context.valueCode
+            ? await findContextValueId(this.db, context.dimensionCode, context.valueCode)
+            : null,
+          minimumDistinctValues,
+        });
+      }
 
       nodeRequirements.push({
         objectiveRevisionId: objective.objectiveRevisionId,
         canonicalCode: objective.canonicalCode,
         policy: fullPolicy,
+        contexts: policy.contexts,
       });
       requirementCount += 1;
     }
@@ -263,7 +346,7 @@ export class RoleCompiler {
     canonicalCode: string,
   ): Promise<ResolvedObjective> {
     const result = await this.db.execute(sql`
-      SELECT lor.id, lo.canonical_code, lor.mastery_level
+      SELECT lor.id, lo.canonical_code, lor.mastery_level, lor.default_assurance_class
       FROM catalog.learning_objective_revision lor
       JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
       JOIN catalog.framework_release_objective fro ON fro.objective_revision_id = lor.id
@@ -276,6 +359,7 @@ export class RoleCompiler {
       objectiveRevisionId: row.id as string,
       canonicalCode: row.canonical_code as string,
       masteryLevel: Number(row.mastery_level),
+      defaultAssuranceClass: row.default_assurance_class as string,
       sourceCapabilitySetRevisionId: null,
     };
   }
@@ -322,7 +406,7 @@ export class RoleCompiler {
   ): Promise<void> {
     // Direct objective members
     const direct = await this.db.execute(sql`
-      SELECT lor.id, lo.canonical_code, lor.mastery_level
+      SELECT lor.id, lo.canonical_code, lor.mastery_level, lor.default_assurance_class
       FROM catalog.capability_set_objective_member m
       JOIN catalog.learning_objective_revision lor ON lor.id = m.objective_revision_id
       JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
@@ -335,6 +419,7 @@ export class RoleCompiler {
           objectiveRevisionId: id,
           canonicalCode: row.canonical_code as string,
           masteryLevel: Number(row.mastery_level),
+          defaultAssuranceClass: row.default_assurance_class as string,
           sourceCapabilitySetRevisionId: setRevisionId,
         });
       }
@@ -343,7 +428,7 @@ export class RoleCompiler {
     // Competency members: objectives with primary placement in the competency,
     // filtered by the member's selection_filter.levels when present.
     const viaCompetency = await this.db.execute(sql`
-      SELECT lor.id, lo.canonical_code, lor.mastery_level
+      SELECT lor.id, lo.canonical_code, lor.mastery_level, lor.default_assurance_class
       FROM catalog.capability_set_competency_member m
       JOIN catalog.competency_objective_membership com
         ON com.competency_revision_id = m.competency_revision_id
@@ -364,6 +449,7 @@ export class RoleCompiler {
           objectiveRevisionId: id,
           canonicalCode: row.canonical_code as string,
           masteryLevel: Number(row.mastery_level),
+          defaultAssuranceClass: row.default_assurance_class as string,
           sourceCapabilitySetRevisionId: setRevisionId,
         });
       }

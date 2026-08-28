@@ -162,7 +162,7 @@ export async function validateRelease(
     JOIN catalog.learning_objective_revision lor ON lor.id = fro.objective_revision_id
     JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
     WHERE fro.framework_release_id = ${frameworkReleaseId}
-      AND lor.assurance_class IN ('B', 'C')
+      AND lor.default_assurance_class IN ('B', 'C')
       AND NOT EXISTS (
         SELECT 1 FROM assessment.task_objective_evidence_spec spec
         WHERE spec.objective_revision_id = fro.objective_revision_id

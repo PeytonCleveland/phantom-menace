@@ -71,6 +71,13 @@
       "when": 1787957158999,
       "tag": "0009_administration_ceiling_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787957159999,
+      "tag": "0010_assurance_split",
+      "breakpoints": true
     }
   ]
 }

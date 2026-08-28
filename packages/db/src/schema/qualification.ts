@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  char,
   check,
   integer,
   interval,
@@ -124,6 +125,10 @@ export const objectiveRequirement = qualificationSchema.table(
     minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance"),
     minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope"),
     maximumEvidenceAge: interval("maximum_evidence_age"),
+    // Governing and frozen. Compiled to an explicit value at role publication —
+    // never inherited dynamically from the objective afterwards, because the
+    // frozen revision must state what it actually required.
+    requiredAssuranceClass: char("required_assurance_class", { length: 1 }).notNull(),
   },
   (t) => [
     unique("uq_objective_requirement").on(t.requirementGroupId, t.objectiveRevisionId),
@@ -131,6 +136,7 @@ export const objectiveRequirement = qualificationSchema.table(
       "ck_objective_requirement_independence",
       sql`minimum_independence IS NULL OR minimum_independence BETWEEN 0 AND 4`,
     ),
+    check("ck_objective_requirement_assurance", sql`required_assurance_class IN ('A','B','C')`),
   ],
 );
 
