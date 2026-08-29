@@ -1,0 +1,2 @@
+ALTER TABLE "assessment"."task_objective_evidence_spec" ALTER COLUMN "minimum_transfer_distance" DROP DEFAULT;--> statement-breakpoint
+ALTER TABLE "assessment"."task_objective_evidence_spec" ALTER COLUMN "minimum_performance_scope" DROP DEFAULT;

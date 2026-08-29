@@ -92,6 +92,20 @@
       "when": 1788010000000,
       "tag": "0012_evidence_semantics_immutability",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788020000000,
+      "tag": "0013_context_value_ancestor_freeze",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787967139779,
+      "tag": "0014_drop_evidence_spec_gate_defaults",
+      "breakpoints": true
     }
   ]
 }

@@ -2,7 +2,7 @@ import { sql } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
 import * as schema from "../schema/index";
 import { propagateFromObservation, recordObservation } from "../services/evidence";
-import { createLearner, objectiveId, releaseId, withDb } from "./helpers";
+import { createLearner, expectRejectionMatching, objectiveId, releaseId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
 afterAll(async () => {
@@ -218,6 +218,76 @@ test("a fully_subsumes rule with no required criteria refuses to propagate", asy
   }
 });
 
+test("proxy propagation is gated by the source attempt's administration ceiling", async () => {
+  // recordObservation enforces the administration's effective ceiling for
+  // DIRECT evidence (see ceiling.test.ts); proxy propagation must not be a
+  // back door around the same limit. All three seeded implication rules
+  // happen to point downward, so this is unreachable on seeded data — it
+  // becomes reachable the moment anyone authors an upward rule, which this
+  // test does deliberately: a real L2 ceiling administration, propagating to
+  // an L3 target it could never establish directly.
+  const learnerId = await createLearner(db, "proxy-ceiling-guard");
+
+  const administration = await db.execute(sql`
+    SELECT ta.id FROM assessment.task_administration ta
+    WHERE ta.mode = 'practice' AND ta.effective_evidence_ceiling = 2
+    LIMIT 1
+  `);
+  const administrationId = administration.rows[0]?.id;
+  if (typeof administrationId !== "string") throw new Error("no L2 practice administration seeded");
+
+  const [attempt] = await db
+    .insert(schema.learnerAttempt)
+    .values({ learnerId, taskAdministrationId: administrationId, attemptStatus: "completed" })
+    .returning({ id: schema.learnerAttempt.id });
+  if (!attempt) throw new Error("failed to create attempt");
+
+  // NET-TCP-L1-001 (mastery L1) has no critical_error criteria, so a
+  // spec-less observation isn't blocked by the unmeasured-critical-error gate
+  // this file exercises elsewhere — the point here is the ceiling gate alone.
+  const sourceObjective = await objectiveId(db, "NET-TCP-L1-001");
+  // RUST-NET-L3-001 (mastery L3) sits above the L2 ceiling.
+  const targetObjective = await objectiveId(db, "RUST-NET-L3-001");
+
+  const [implication] = await db
+    .insert(schema.objectiveEvidenceImplication)
+    .values({
+      frameworkReleaseId: await releaseId(db),
+      sourceObjectiveRevisionId: sourceObjective,
+      targetObjectiveRevisionId: targetObjective,
+      // evidence_supports is exempt from the "must have required criteria"
+      // guard, so zero required criteria is legitimate here and doesn't
+      // confound the ceiling check under test.
+      implicationType: "evidence_supports",
+      derivedEvidenceStrength: "supporting",
+      maximumTargetState: "developing",
+      automatic: true,
+      validationStatus: "approved",
+      rationale: "test-only: upward implication proving proxy propagation respects the ceiling",
+    })
+    .returning({ id: schema.objectiveEvidenceImplication.id });
+  if (!implication) throw new Error("failed to insert test implication");
+
+  try {
+    const observationId = await recordObservation(db, {
+      learnerId,
+      attemptId: attempt.id,
+      objectiveRevisionId: sourceObjective,
+      result: "successful",
+      evidenceStrength: "direct",
+      independenceLevel: 3,
+      transferDistance: "near",
+      performanceScope: "focused",
+    });
+
+    const propagation = await propagateFromObservation(db, observationId);
+    expect(propagation.createdProxyObservationIds).toEqual([]);
+    expect(propagation.skipped.some((s) => /ceiling/i.test(s.reason))).toBe(true);
+  } finally {
+    await db.delete(schema.objectiveEvidenceImplication).where(sql`id = ${implication.id}`);
+  }
+});
+
 test("a fully_subsumes rule propagates when every required criterion is established", async () => {
   // Every other propagation test in this file is a refusal test. This is the
   // positive path: RUST-NET-L4-001 -> RUST-NET-L3-003 propagates when its
@@ -294,4 +364,49 @@ test("every seeded fully_subsumes implication requires at least one criterion", 
       )
   `);
   expect(result.rows).toEqual([]);
+});
+
+test("a task evidence spec cannot omit its transfer-distance or performance-scope gate", async () => {
+  // These two columns used to be bare .notNull() (as minimumTransfer was
+  // before the transfer/scope split); a later pass gave them .default(...),
+  // so a forgotten seed value would silently install the WEAKEST possible
+  // gate ("same"/"focused") instead of failing loudly at insert. Restoring
+  // bare .notNull() (no default) means Postgres itself refuses the row.
+  const suffix = crypto.randomUUID();
+  const [template] = await db
+    .insert(schema.taskTemplate)
+    .values({ canonicalCode: `SCRATCH-EVIDENCE-GATE-${suffix}` })
+    .returning({ id: schema.taskTemplate.id });
+  if (!template) throw new Error("failed to insert scratch task template");
+  const [revision] = await db
+    .insert(schema.taskRevision)
+    .values({
+      taskTemplateId: template.id,
+      revisionNo: 1,
+      frameworkReleaseId: await releaseId(db),
+      title: "Scratch task (evidence gate test)",
+      taskKind: "exercise",
+      scenario: "scratch",
+      designEvidenceCeiling: 5,
+    })
+    .returning({ id: schema.taskRevision.id });
+  if (!revision) throw new Error("failed to insert scratch task revision");
+
+  try {
+    await expectRejectionMatching(
+      db.execute(sql`
+        INSERT INTO assessment.task_objective_evidence_spec
+          (task_revision_id, objective_revision_id, claim_role, evidence_strength, minimum_independence)
+        VALUES (
+          ${revision.id},
+          ${await objectiveId(db, "NET-TCP-L1-001")},
+          'primary', 'direct', 2
+        )
+      `),
+      /null value.*column "minimum_transfer_distance"|violates not-null constraint/i,
+    );
+  } finally {
+    await db.delete(schema.taskRevision).where(sql`id = ${revision.id}`);
+    await db.delete(schema.taskTemplate).where(sql`id = ${template.id}`);
+  }
 });

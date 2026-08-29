@@ -171,12 +171,8 @@ export const taskObjectiveEvidenceSpec = assessmentSchema.table(
     claimRole: claimRoleEnum("claim_role").notNull(),
     evidenceStrength: evidenceStrengthEnum("evidence_strength").notNull(),
     minimumIndependence: smallint("minimum_independence").notNull(),
-    minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance")
-      .notNull()
-      .default("same"),
-    minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope")
-      .notNull()
-      .default("focused"),
+    minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance").notNull(),
+    minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope").notNull(),
     rubricRevisionId: uuid("rubric_revision_id").references(() => rubricRevision.id),
     proxyPropagationAllowed: boolean("proxy_propagation_allowed").notNull().default(true),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),

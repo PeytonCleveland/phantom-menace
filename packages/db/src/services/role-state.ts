@@ -97,8 +97,11 @@ export async function checkObjectiveSatisfaction(
     pinnedContexts.map((c) => sql`${c.dimensionCode}`),
     sql`, `,
   )}]::text[]`;
-  const pinnedCte = sql`
-    WITH RECURSIVE pinned AS (
+  // Split into a bare CTE body (no leading WITH RECURSIVE) so the distinct-
+  // value-count query below can attach a second recursive CTE to the same
+  // WITH clause — Postgres allows exactly one WITH per statement.
+  const pinnedCteBody = sql`
+    pinned AS (
       SELECT cv.id, cv.dimension_code
       FROM catalog.context_value cv
       WHERE (cv.dimension_code, cv.code) IN (
@@ -114,6 +117,26 @@ export async function checkObjectiveSatisfaction(
       SELECT child.id, child.dimension_code
       FROM catalog.context_value child
       JOIN pinned ON child.parent_value_id = pinned.id
+    )
+  `;
+  const pinnedCte = sql`WITH RECURSIVE ${pinnedCteBody}`;
+
+  // Every context value collapses to the topmost ancestor in its own
+  // dimension's hierarchy (root has no parent). Reuses the exact recursive
+  // shape above (seed rows, then join child.parent_value_id = seed.id) —
+  // just seeded from every root instead of the pinned values — so distinct
+  // breadth counting can collapse an assertion's value to its root before
+  // counting, the same way the pin path already collapses a demanded value
+  // down to its descendants.
+  const valueRootCteBody = sql`
+    value_root AS (
+      SELECT cv.id, cv.id AS root_id
+      FROM catalog.context_value cv
+      WHERE cv.parent_value_id IS NULL
+      UNION ALL
+      SELECT child.id, vr.root_id
+      FROM catalog.context_value child
+      JOIN value_root vr ON child.parent_value_id = vr.id
     )
   `;
 
@@ -154,10 +177,11 @@ export async function checkObjectiveSatisfaction(
   for (const requirement of policy.contexts) {
     if (requirement.minimumDistinctValues <= 1) continue;
     const distinct = await db.execute(sql`
-      ${pinnedCte}
-      SELECT count(DISTINCT ac.context_value_id) AS n
+      WITH RECURSIVE ${pinnedCteBody}, ${valueRootCteBody}
+      SELECT count(DISTINCT vr.root_id) AS n
       FROM learner.objective_assertion a
       JOIN learner.objective_assertion_context ac ON ac.assertion_id = a.id
+      JOIN value_root vr ON vr.id = ac.context_value_id
       WHERE a.learner_id = ${learnerId}
         AND a.objective_revision_id = ${objectiveRevisionId}
         AND a.state = 'demonstrated'

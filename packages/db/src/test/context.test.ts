@@ -169,6 +169,87 @@ test("GovCloud evidence satisfies an AWS requirement, but not the reverse", asyn
   expect(asAzure.satisfied).toBe(false);
 });
 
+test("breadth counting collapses a value and its ancestor into one distinct provider", async () => {
+  // aws_govcloud's parent is aws precisely because it is not a different
+  // provider (spec §1). A requirement demanding evidence in 2 distinct
+  // cloud_provider values must not be satisfied by aws + aws_govcloud alone:
+  // both collapse to the same root, so this is still only 1 provider.
+  const learnerId = await createLearner(db, "ctx-breadth-same-root");
+  const target = await objectiveId(db, "CLOUD-DEPLOY-L3-001");
+  const breadthTwo = (dimensionCode: string) => ({
+    directEvidenceRequired: false,
+    proxyEvidenceAllowed: true,
+    minimumIndependence: null,
+    minimumTransferDistance: null,
+    minimumPerformanceScope: null,
+    maximumEvidenceAge: null,
+    contexts: [{ dimensionCode, valueCode: null, minimumDistinctValues: 2 }],
+  });
+
+  const awsObs = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    contexts: { cloud_provider: "aws" },
+  });
+  const govcloudObs = await recordObservation(db, {
+    learnerId,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    contexts: { cloud_provider: "aws_govcloud" },
+  });
+  await recalculateForObservations(db, [awsObs, govcloudObs]);
+
+  const sameRoot = await checkObjectiveSatisfaction(
+    db,
+    learnerId,
+    target,
+    breadthTwo("cloud_provider"),
+  );
+  expect(sameRoot.satisfied).toBe(false);
+  expect(sameRoot.reason).toMatch(/2 distinct cloud_provider/);
+
+  // A genuinely different provider (a different root) still counts.
+  const azureLearner = await createLearner(db, "ctx-breadth-distinct-roots");
+  const azureAwsObs = await recordObservation(db, {
+    learnerId: azureLearner,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    contexts: { cloud_provider: "aws" },
+  });
+  const azureObs = await recordObservation(db, {
+    learnerId: azureLearner,
+    objectiveRevisionId: target,
+    result: "successful",
+    evidenceStrength: "direct",
+    independenceLevel: 4,
+    transferDistance: "near",
+    performanceScope: "focused",
+    contexts: { cloud_provider: "azure" },
+  });
+  await recalculateForObservations(db, [azureAwsObs, azureObs]);
+
+  const distinctRoots = await checkObjectiveSatisfaction(
+    db,
+    azureLearner,
+    target,
+    breadthTwo("cloud_provider"),
+  );
+  expect(distinctRoots.satisfied).toBe(true);
+});
+
 test("an observation missing a required dimension cannot produce a demonstrated assertion", async () => {
   const learnerId = await createLearner(db, "ctx-incomplete");
   const target = await objectiveId(db, "CLOUD-DEPLOY-L3-001");

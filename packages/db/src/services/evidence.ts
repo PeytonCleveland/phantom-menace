@@ -328,6 +328,32 @@ export async function propagateFromObservation(
       continue;
     }
 
+    // The administration's effective ceiling binds every claim it can
+    // establish, direct or proxy — a proxy hop must not be a back door around
+    // the same limit recordObservation enforces on direct evidence. An
+    // observation with no attempt (adaptive knowledge checks) carries no
+    // administration and so no ceiling, exactly as in recordObservation.
+    if (observation.attempt_id) {
+      const ceilingResult = await db.execute(sql`
+        SELECT ta.effective_evidence_ceiling, lor.mastery_level
+        FROM assessment.learner_attempt att
+        JOIN assessment.task_administration ta ON ta.id = att.task_administration_id
+        JOIN catalog.learning_objective_revision lor ON lor.id = ${rule.target_objective_revision_id}
+        WHERE att.id = ${observation.attempt_id}
+      `);
+      const ceilingRow = ceilingResult.rows[0];
+      if (
+        ceilingRow &&
+        Number(ceilingRow.mastery_level) > Number(ceilingRow.effective_evidence_ceiling)
+      ) {
+        result.skipped.push({
+          targetObjectiveCode: targetCode,
+          reason: `administration effective ceiling L${ceilingRow.effective_evidence_ceiling} cannot establish ${targetCode} (L${ceilingRow.mastery_level})`,
+        });
+        continue;
+      }
+    }
+
     // §14.4e/f: insert proxy evidence with lineage, rule strength, and cap.
     const [proxy] = await db
       .insert(s.observation)

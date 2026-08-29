@@ -691,3 +691,68 @@ test("an unreferenced context value's identity fields remain mutable", async () 
     await db.delete(s.contextDimension).where(sql`code = ${dim}`);
   }
 });
+
+// ---------------------------------------------------------------------------
+// The 0012 freeze checked only whether OLD.id itself was directly referenced.
+// Re-parenting an UNREFERENCED ANCESTOR of a referenced value slipped through:
+// with top -> mid -> leaf and only `leaf` referenced, re-parenting `mid`
+// changes what evidence at `leaf` (and any other descendant of `mid`) means
+// just as much as re-parenting `leaf` itself would — the escape 0013 closes
+// by checking the descendant closure of OLD, not just OLD.
+// ---------------------------------------------------------------------------
+
+test("re-parenting an unreferenced ancestor of a referenced value is rejected", async () => {
+  const suffix = crypto.randomUUID();
+  const dim = `t13_ancestor_freeze_${suffix}`;
+  const { taskVariantId } = await seededTaskVariantAndAdministration();
+
+  await db.insert(s.contextDimension).values({ code: dim, name: "Scratch ancestor-freeze dim" });
+  const [top] = await db
+    .insert(s.contextValue)
+    .values({ dimensionCode: dim, code: "top", name: "Top" })
+    .returning({ id: s.contextValue.id });
+  const [sibling] = await db
+    .insert(s.contextValue)
+    .values({ dimensionCode: dim, code: "sibling", name: "Unrelated sibling" })
+    .returning({ id: s.contextValue.id });
+  if (!top || !sibling) throw new Error("failed to create scratch top-level values");
+  const [mid] = await db
+    .insert(s.contextValue)
+    .values({ dimensionCode: dim, code: "mid", name: "Mid", parentValueId: top.id })
+    .returning({ id: s.contextValue.id });
+  if (!mid) throw new Error("failed to create scratch mid value");
+  const [leaf] = await db
+    .insert(s.contextValue)
+    .values({ dimensionCode: dim, code: "leaf", name: "Leaf", parentValueId: mid.id })
+    .returning({ id: s.contextValue.id });
+  if (!leaf) throw new Error("failed to create scratch leaf value");
+
+  try {
+    // Only `leaf` is referenced — `mid` and `top` carry no direct reference,
+    // so this is non-vacuous evidence that the OLD-only check would miss it.
+    await db.insert(s.taskVariantContext).values({
+      taskVariantId,
+      dimensionCode: dim,
+      contextValueId: leaf.id,
+    });
+
+    await expectRejectionMatching(
+      db.execute(sql`
+        UPDATE catalog.context_value SET parent_value_id = ${sibling.id} WHERE id = ${mid.id}
+      `),
+      /context value mid is referenced/,
+    );
+
+    // `sibling`, meanwhile, has no referenced descendant at all (it isn't
+    // part of `leaf`'s ancestor chain) and stays mutable.
+    await db.execute(sql`
+      UPDATE catalog.context_value SET code = 'sibling_renamed' WHERE id = ${sibling.id}
+    `);
+  } finally {
+    await db
+      .delete(s.taskVariantContext)
+      .where(sql`task_variant_id = ${taskVariantId} AND dimension_code = ${dim}`);
+    await db.delete(s.contextValue).where(sql`dimension_code = ${dim}`);
+    await db.delete(s.contextDimension).where(sql`code = ${dim}`);
+  }
+});
