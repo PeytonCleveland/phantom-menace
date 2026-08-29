@@ -167,11 +167,18 @@ export async function recalculateAssertionsForObjective(
       if (!assertion) throw new Error("failed to insert assertion");
 
       for (const [dimensionCode, valueCode] of Object.entries(bucket.contexts)) {
-        await tx.execute(sql`
+        const inserted = await tx.execute(sql`
           INSERT INTO learner.objective_assertion_context (assertion_id, dimension_code, context_value_id)
           SELECT ${assertion.id}, ${dimensionCode}, id FROM catalog.context_value
           WHERE dimension_code = ${dimensionCode} AND code = ${valueCode}
         `);
+        // An unresolved code must fail loudly: silently inserting zero rows
+        // here would leave the assertion's context_key populated but its
+        // structured context rows incomplete — a claim that can then never
+        // satisfy a pinned requirement, with no error to say why.
+        if (inserted.rowCount !== 1) {
+          throw new Error(`unknown context value ${dimensionCode}:${valueCode}`);
+        }
       }
 
       for (const { observationId, weight } of contributing) {

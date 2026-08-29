@@ -252,13 +252,21 @@ export class CatalogSession {
           policy: contextPolicy.policy,
         });
         for (const valueCode of contextPolicy.allowedValueCodes ?? []) {
-          await tx.execute(sql`
+          const inserted = await tx.execute(sql`
             INSERT INTO catalog.objective_context_allowed_value
               (objective_revision_id, dimension_code, context_value_id)
             SELECT ${revision.id}, ${contextPolicy.dimensionCode}, id
             FROM catalog.context_value
             WHERE dimension_code = ${contextPolicy.dimensionCode} AND code = ${valueCode}
           `);
+          // An unresolved code must fail loudly: silently inserting zero rows
+          // here would leave the whitelist smaller than authored, and the
+          // role compiler's whitelist check treats an empty whitelist as
+          // "unrestricted" — so a typo would silently widen the whitelist
+          // from restricted to unrestricted instead of erroring.
+          if (inserted.rowCount !== 1) {
+            throw new Error(`unknown context value ${contextPolicy.dimensionCode}:${valueCode}`);
+          }
         }
       }
 

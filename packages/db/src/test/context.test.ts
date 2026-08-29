@@ -2,10 +2,11 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
 import * as s from "../schema/index";
 import { recalculateForObservations } from "../services/assertions";
+import { CatalogSession } from "../services/catalog";
 import { ContextService, canonicalContextKey } from "../services/context";
 import { recordObservation } from "../services/evidence";
 import { checkObjectiveSatisfaction } from "../services/role-state";
-import { createLearner, objectiveId, withDb } from "./helpers";
+import { createLearner, objectiveId, releaseId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
 afterAll(async () => {
@@ -201,4 +202,63 @@ test("an observation missing a required dimension cannot produce a demonstrated 
   const result = results.get(target);
   expect(result?.outcomes ?? []).toEqual([]);
   expect(result?.diagnostics.skippedIncompleteContext).toBe(1);
+});
+
+test("an objective's context-policy whitelist naming a nonexistent value code fails loudly", async () => {
+  const frameworkReleaseId = await releaseId(db);
+  const session = new CatalogSession(db, frameworkReleaseId);
+
+  // Reuse the already-seeded cloud-infrastructure.application-deployment
+  // competency without re-inserting it: creating a scratch domain+competency
+  // here would be permanent test-DB litter, because both would immediately
+  // become immutable (they'd belong to the published SWE 0.1.0 release, and
+  // §13.5 content-revision immutability forbids ever deleting that). Looking
+  // up the existing competency revision and seeding the session's cache with
+  // it avoids that; createObjective's own insert runs inside one transaction,
+  // so the thrown error below rolls back cleanly with nothing left behind.
+  const competencyCode = "cloud-infrastructure.application-deployment";
+  const competencyRevision = await db.execute(sql`
+    SELECT cr.id
+    FROM catalog.competency_revision cr
+    JOIN catalog.competency c ON c.id = cr.competency_id
+    JOIN catalog.framework_release_competency frc ON frc.competency_revision_id = cr.id
+    WHERE c.canonical_code = ${competencyCode} AND frc.framework_release_id = ${frameworkReleaseId}
+  `);
+  const competencyRevisionId = competencyRevision.rows[0]?.id;
+  if (typeof competencyRevisionId !== "string") {
+    throw new Error(`seeded competency ${competencyCode} not found`);
+  }
+  session.competencyRevisionByCode.set(competencyCode, competencyRevisionId);
+
+  await expect(
+    session.createObjective({
+      code: `TEST-CTX-BAD-WHITELIST-${crypto.randomUUID()}`,
+      title: "Test objective with a bad context whitelist",
+      statement: "Exists only to exercise a rejected createObjective call.",
+      masteryLevel: 1,
+      verbCode: "implement",
+      defaultAssuranceClass: "B",
+      criteria: [],
+      claimEvidenceConstraints: {
+        practicalPerformanceRequired: false,
+        constructedResponseSupported: false,
+        multipleChoiceAloneSufficient: false,
+        directObservationPossible: true,
+      },
+      contextPolicies: [
+        {
+          dimensionCode: "cloud_provider",
+          policy: "required",
+          allowedValueCodes: ["not-a-real-value-code"],
+        },
+      ],
+      primaryCompetencyCode: competencyCode,
+    }),
+  ).rejects.toThrow(/unknown context value cloud_provider:not-a-real-value-code/);
+
+  // And confirm the rollback actually happened: no half-created objective.
+  const orphan = await db.execute(sql`
+    SELECT 1 FROM catalog.learning_objective WHERE canonical_code LIKE 'TEST-CTX-BAD-WHITELIST-%'
+  `);
+  expect(orphan.rows).toHaveLength(0);
 });
