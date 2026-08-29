@@ -6,7 +6,13 @@ import { ContextService } from "../services/context";
 import { recordObservation } from "../services/evidence";
 import { computeFrontier } from "../services/projections";
 import { checkObjectiveSatisfaction, type EvidencePolicyCheck } from "../services/role-state";
-import { createLearner, objectiveId, seRoleLevelRevisionId, withDb } from "./helpers";
+import {
+  createDraftObjectiveFixture,
+  createLearner,
+  objectiveId,
+  seRoleLevelRevisionId,
+  withDb,
+} from "./helpers";
 
 /**
  * Task 14: context correctness hardening.
@@ -287,17 +293,29 @@ test("an observation missing a newly-required context dimension is skipped, visi
   await svc.createDimension({ code: dim, name: "Test Step 4 Dimension" });
   await svc.createValue({ dimensionCode: dim, code: "only_val", name: "Only" });
 
-  // Mutates shared catalog state (a required-dimension policy on the seeded
-  // RUST-NET-L4-002), not just this test's own learner. Safe only because
-  // vitest.config.ts sets fileParallelism: false, so no other test file can
-  // observe this objective mid-mutation; if that ever changes, this needs
-  // its own catalog fixture instead.
-  const objectiveRevisionId = await objectiveId(db, "RUST-NET-L4-002");
-  await db.insert(s.objectiveContextPolicy).values({
-    objectiveRevisionId,
-    dimensionCode: dim,
-    policy: "required",
+  // Task 12 froze objective_context_policy against INSERT once its objective
+  // revision belongs to a published release, and the seeded RUST-NET-L4-002
+  // this test used to mutate is part of the published SWE 0.1.0 release — so
+  // the policy this test needs can no longer be added to it. Use a fixture
+  // objective in a release of our own (never published) instead; nothing
+  // about recordObservation or recalculateAssertionsForObjective depends on
+  // the owning release's status.
+  const fixture = await createDraftObjectiveFixture(db, "skipped-incomplete-context", {
+    title: "Scratch objective for context-hardening step 4",
+    statement: "Exists only to carry a required context dimension for this test.",
+    masteryLevel: 3,
+    verbCode: "implement",
+    defaultAssuranceClass: "B",
+    criteria: [],
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
+    contextPolicies: [{ dimensionCode: dim, policy: "required" }],
   });
+  const objectiveRevisionId = fixture.objectiveRevisionId;
 
   try {
     const learnerId = await createLearner(db, "skipped-incomplete-context");
@@ -323,6 +341,12 @@ test("an observation missing a newly-required context dimension is skipped, visi
     expect(outcomes).toHaveLength(0);
     expect(diagnostics.skippedIncompleteContext).toBe(1);
   } finally {
+    // recordObservation above created an append-only evidence.observation row
+    // referencing this fixture's objective revision, so the revision (and
+    // its parent domain/competency/framework/release chain) can never be
+    // deleted — fixture.cleanup() is intentionally NOT called here. Only
+    // the context policy, value, and dimension this test introduced are
+    // reclaimed; nothing references those.
     await db
       .delete(s.objectiveContextPolicy)
       .where(sql`objective_revision_id = ${objectiveRevisionId} AND dimension_code = ${dim}`);

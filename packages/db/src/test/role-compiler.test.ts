@@ -1,9 +1,8 @@
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
 import * as s from "../schema/index";
-import { findContextValueId } from "../services/context";
 import { RoleCompiler } from "../services/role-compiler";
-import { objectiveId, releaseId, withDb } from "./helpers";
+import { createDraftObjectiveFixture, releaseId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
 afterAll(async () => {
@@ -20,6 +19,12 @@ afterAll(async () => {
  * tests drive RoleCompiler directly against a scratch role/role-level. They
  * never touch the seeded composition, so readiness/frontier numbers and the
  * pinned demo lines are unaffected.
+ *
+ * The whitelist test below used to install its whitelist directly onto the
+ * seeded CLOUD-DEPLOY-L3-001. Task 12 froze objective_context_allowed_value
+ * against INSERT once an objective revision belongs to a published release
+ * (CLOUD-DEPLOY-L3-001 does, via SWE 0.1.0), so it now builds its own
+ * fixture objective in a framework release of its own instead.
  */
 
 /**
@@ -130,17 +135,32 @@ test("a role requirement pinning a dimension the objective does not declare requ
 });
 
 test("a role requirement pinning a value outside the objective's allowed-value whitelist is rejected", async () => {
-  const frameworkReleaseId = await releaseId(db);
-  const target = await objectiveId(db, "CLOUD-DEPLOY-L3-001");
-  const azureValueId = await findContextValueId(db, "cloud_provider", "azure");
-
-  // CLOUD-DEPLOY-L3-001 ships with no whitelist (any permitted value passes).
-  // Add one here, scoped to this test, so the whitelist-rejection branch has
-  // something to reject against.
-  await db.insert(s.objectiveContextAllowedValue).values({
-    objectiveRevisionId: target,
-    dimensionCode: "cloud_provider",
-    contextValueId: azureValueId,
+  // CLOUD-DEPLOY-L3-001 (the seeded objective this test used to mutate)
+  // belongs to the published SWE 0.1.0 release, and Task 12 froze
+  // objective_context_allowed_value against INSERT once its objective
+  // revision is published — so a whitelist can no longer be added to it here.
+  // Build a fixture objective with the whitelist authored up front, in a
+  // framework release of its own that this never publishes, and compile the
+  // scratch role against THAT release instead of SWE's.
+  const fixture = await createDraftObjectiveFixture(db, "whitelist", {
+    title: "Scratch objective with a cloud_provider whitelist",
+    statement: "Exists only to exercise the role compiler's whitelist-rejection branch.",
+    masteryLevel: 3,
+    verbCode: "implement",
+    defaultAssuranceClass: "B",
+    criteria: [],
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
+    // Only "azure" is permitted — deliberately narrower than what the role
+    // requirement below pins, so the whitelist-rejection branch has
+    // something to reject against.
+    contextPolicies: [
+      { dimensionCode: "cloud_provider", policy: "required", allowedValueCodes: ["azure"] },
+    ],
   });
 
   const { roleLevelId, cleanup } = await createScratchRoleLevel("whitelist");
@@ -148,7 +168,7 @@ test("a role requirement pinning a value outside the objective's allowed-value w
     await expect(
       new RoleCompiler(db).compileAndPublish({
         roleLevelId,
-        frameworkReleaseId,
+        frameworkReleaseId: fixture.frameworkReleaseId,
         version: "0.0.1",
         title: "Scratch",
         description: "",
@@ -159,7 +179,7 @@ test("a role requirement pinning a value outside the objective's allowed-value w
             members: [
               {
                 kind: "objective",
-                objectiveCode: "CLOUD-DEPLOY-L3-001",
+                objectiveCode: fixture.objectiveCode,
                 // Pin "aws", but the whitelist just installed only permits azure.
                 policy: { contexts: [{ dimensionCode: "cloud_provider", valueCode: "aws" }] },
               },
@@ -169,18 +189,13 @@ test("a role requirement pinning a value outside the objective's allowed-value w
       }),
     ).rejects.toThrow(/allowed-value whitelist does not permit/);
   } finally {
+    // The role compiler's early insert-then-validate flow (compileGroup
+    // isn't wrapped in one transaction) leaves the requirement group and
+    // objective_requirement committed even though the whole call rejects —
+    // clean those up first, so the FK from objective_requirement to this
+    // fixture's revision is gone before the fixture itself is torn down.
     await safeCleanup(cleanup);
-    await safeCleanup(() =>
-      db
-        .delete(s.objectiveContextAllowedValue)
-        .where(
-          and(
-            eq(s.objectiveContextAllowedValue.objectiveRevisionId, target),
-            eq(s.objectiveContextAllowedValue.dimensionCode, "cloud_provider"),
-          ),
-        )
-        .then(() => undefined),
-    );
+    await safeCleanup(() => fixture.cleanup());
   }
 });
 

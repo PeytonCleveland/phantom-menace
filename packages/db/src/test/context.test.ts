@@ -2,31 +2,16 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
 import * as s from "../schema/index";
 import { recalculateForObservations } from "../services/assertions";
-import { CatalogSession } from "../services/catalog";
+import { CatalogSession, createRelease, ensureFramework } from "../services/catalog";
 import { ContextService, canonicalContextKey } from "../services/context";
 import { recordObservation } from "../services/evidence";
 import { checkObjectiveSatisfaction } from "../services/role-state";
-import { createLearner, objectiveId, releaseId, withDb } from "./helpers";
+import { createLearner, expectRejectionMatching, objectiveId, withDb } from "./helpers";
 
 const { db, pool } = withDb();
 afterAll(async () => {
   await pool.end();
 });
-
-/**
- * pg errors surface through drizzle as `Error: Failed query: ...` with the
- * real database message on `.cause`. Assert against that, not the wrapper.
- */
-async function expectRejectionMatching(query: Promise<unknown>, pattern: RegExp): Promise<void> {
-  try {
-    await query;
-    throw new Error(`expected query to be rejected matching ${pattern}`);
-  } catch (err) {
-    const cause = err instanceof Error && err.cause instanceof Error ? err.cause : err;
-    const message = cause instanceof Error ? cause.message : String(cause);
-    expect(message).toMatch(pattern);
-  }
-}
 
 test("canonical context keys sort by dimension and join with semicolons", () => {
   expect(canonicalContextKey({})).toBe("");
@@ -205,34 +190,42 @@ test("an observation missing a required dimension cannot produce a demonstrated 
 });
 
 test("an objective's context-policy whitelist naming a nonexistent value code fails loudly", async () => {
-  const frameworkReleaseId = await releaseId(db);
+  // This used to reuse the already-seeded cloud-infrastructure.
+  // application-deployment competency (belonging to the published SWE 0.1.0
+  // release) rather than create a scratch one, on the theory that
+  // createObjective's own insert runs inside one transaction, so the thrown
+  // error rolls back cleanly with nothing left behind either way. Task 12
+  // breaks that: catalog.objective_claim_evidence_constraint is now frozen
+  // against INSERT once its objective revision's release is published, and
+  // that insert happens (inside the same transaction) *before* the
+  // context-policy loop this test means to exercise — so the call would
+  // still reject, but with the immutability trigger's message, not the
+  // "unknown context value" one under test. A framework release of its own,
+  // never published, keeps that trigger out of the way; the transaction
+  // still rolls back on the real error, so nothing here needs cleanup.
+  const suffix = crypto.randomUUID();
+  const frameworkId = await ensureFramework(db, {
+    code: `scratch-fw-bad-whitelist-${suffix}`,
+    name: "Scratch framework (bad whitelist)",
+  });
+  const frameworkReleaseId = await createRelease(db, {
+    frameworkId,
+    version: "0.0.1",
+    notes: "Draft-only fixture; never published.",
+  });
   const session = new CatalogSession(db, frameworkReleaseId);
-
-  // Reuse the already-seeded cloud-infrastructure.application-deployment
-  // competency without re-inserting it: creating a scratch domain+competency
-  // here would be permanent test-DB litter, because both would immediately
-  // become immutable (they'd belong to the published SWE 0.1.0 release, and
-  // §13.5 content-revision immutability forbids ever deleting that). Looking
-  // up the existing competency revision and seeding the session's cache with
-  // it avoids that; createObjective's own insert runs inside one transaction,
-  // so the thrown error below rolls back cleanly with nothing left behind.
-  const competencyCode = "cloud-infrastructure.application-deployment";
-  const competencyRevision = await db.execute(sql`
-    SELECT cr.id
-    FROM catalog.competency_revision cr
-    JOIN catalog.competency c ON c.id = cr.competency_id
-    JOIN catalog.framework_release_competency frc ON frc.competency_revision_id = cr.id
-    WHERE c.canonical_code = ${competencyCode} AND frc.framework_release_id = ${frameworkReleaseId}
-  `);
-  const competencyRevisionId = competencyRevision.rows[0]?.id;
-  if (typeof competencyRevisionId !== "string") {
-    throw new Error(`seeded competency ${competencyCode} not found`);
-  }
-  session.competencyRevisionByCode.set(competencyCode, competencyRevisionId);
+  const domainCode = `scratch-domain-bad-whitelist-${suffix}`;
+  const competencyCode = `scratch-competency-bad-whitelist-${suffix}`;
+  await session.createDomain({ code: domainCode, name: "Scratch domain" });
+  await session.createCompetency({
+    code: competencyCode,
+    name: "Scratch competency",
+    primaryDomainCode: domainCode,
+  });
 
   await expect(
     session.createObjective({
-      code: `TEST-CTX-BAD-WHITELIST-${crypto.randomUUID()}`,
+      code: `TEST-CTX-BAD-WHITELIST-${suffix}`,
       title: "Test objective with a bad context whitelist",
       statement: "Exists only to exercise a rejected createObjective call.",
       masteryLevel: 1,
@@ -258,7 +251,43 @@ test("an objective's context-policy whitelist naming a nonexistent value code fa
 
   // And confirm the rollback actually happened: no half-created objective.
   const orphan = await db.execute(sql`
-    SELECT 1 FROM catalog.learning_objective WHERE canonical_code LIKE 'TEST-CTX-BAD-WHITELIST-%'
+    SELECT 1 FROM catalog.learning_objective WHERE canonical_code = ${`TEST-CTX-BAD-WHITELIST-${suffix}`}
   `);
   expect(orphan.rows).toHaveLength(0);
+
+  // The domain/competency/framework/release above were each their own
+  // transaction and did commit; clean them up explicitly.
+  await db.execute(sql`
+    DELETE FROM catalog.domain_competency_membership
+    WHERE competency_revision_id IN (
+      SELECT cr.id FROM catalog.competency_revision cr
+      JOIN catalog.competency c ON c.id = cr.competency_id
+      WHERE c.canonical_code = ${competencyCode}
+    )
+  `);
+  await db.execute(sql`
+    DELETE FROM catalog.framework_release_competency frc
+    USING catalog.competency_revision cr, catalog.competency c
+    WHERE frc.competency_revision_id = cr.id AND cr.competency_id = c.id
+      AND c.canonical_code = ${competencyCode}
+  `);
+  await db.execute(sql`
+    DELETE FROM catalog.competency_revision cr
+    USING catalog.competency c
+    WHERE cr.competency_id = c.id AND c.canonical_code = ${competencyCode}
+  `);
+  await db.execute(sql`DELETE FROM catalog.competency WHERE canonical_code = ${competencyCode}`);
+  await db.execute(sql`
+    DELETE FROM catalog.framework_release_domain frd
+    USING catalog.domain_revision dr, catalog.domain d
+    WHERE frd.domain_revision_id = dr.id AND dr.domain_id = d.id AND d.canonical_code = ${domainCode}
+  `);
+  await db.execute(sql`
+    DELETE FROM catalog.domain_revision dr
+    USING catalog.domain d
+    WHERE dr.domain_id = d.id AND d.canonical_code = ${domainCode}
+  `);
+  await db.execute(sql`DELETE FROM catalog.domain WHERE canonical_code = ${domainCode}`);
+  await db.execute(sql`DELETE FROM catalog.framework_release WHERE id = ${frameworkReleaseId}`);
+  await db.execute(sql`DELETE FROM catalog.framework WHERE id = ${frameworkId}`);
 });
