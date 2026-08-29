@@ -1,7 +1,7 @@
 # Evidence Semantics Pass — Design
 
 Date: 2026-08-28
-Status: approved for implementation
+Status: implemented 2026-08-28
 
 ## Purpose
 
