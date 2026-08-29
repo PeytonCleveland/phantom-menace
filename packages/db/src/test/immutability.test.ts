@@ -2,7 +2,14 @@ import { sql } from "drizzle-orm";
 import { afterAll, expect, test } from "vitest";
 import * as s from "../schema/index";
 import { findContextValueId } from "../services/context";
-import { createLearner, expectRejectionMatching, objectiveId, releaseId, withDb } from "./helpers";
+import {
+  createDraftObjectiveFixture,
+  createLearner,
+  expectRejectionMatching,
+  objectiveId,
+  releaseId,
+  withDb,
+} from "./helpers";
 
 /**
  * Task 12: immutability surface for the child rows this pass introduced.
@@ -65,6 +72,45 @@ test("a new criterion cannot be inserted onto a published objective revision", a
     }),
     /published.*frozen/i,
   );
+});
+
+test("a criterion cannot be re-parented off a published objective revision, even onto a draft one", async () => {
+  // The parent-keyed freeze functions must reject based on the OLD parent,
+  // not just NEW: checking only NEW would let an UPDATE silently detach a
+  // row from a frozen parent onto an unfrozen one — the exact retroactive
+  // change 0012 exists to prevent — without ever raising.
+  const fixture = await createDraftObjectiveFixture(db, "criterion-reparent-escape", {
+    title: "Scratch re-parent target",
+    statement: "Exists only to be an unpublished re-parent target.",
+    masteryLevel: 1,
+    verbCode: "implement",
+    defaultAssuranceClass: "B",
+    criteria: [],
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
+  });
+  try {
+    const rustL3RevisionId = await objectiveId(db, "RUST-NET-L3-001");
+    await expectRejectionMatching(
+      db.execute(sql`
+        UPDATE catalog.objective_criterion
+        SET objective_revision_id = ${fixture.objectiveRevisionId}
+        WHERE objective_revision_id = ${rustL3RevisionId} AND code = 'preserve-incomplete-data'
+      `),
+      /published.*frozen/i,
+    );
+    const stillAttached = await db.execute(sql`
+      SELECT 1 FROM catalog.objective_criterion
+      WHERE objective_revision_id = ${rustL3RevisionId} AND code = 'preserve-incomplete-data'
+    `);
+    expect(stillAttached.rows).toHaveLength(1);
+  } finally {
+    await fixture.cleanup();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -160,8 +206,18 @@ test("a published release's implication criterion cannot be deleted", async () =
 // ---------------------------------------------------------------------------
 // assessment.task_variant_context / observable_criterion_mapping — a task
 // revision has no published state of its own; these freeze once a learner
-// attempt exists under the owning task revision. INSERT stays open (a task
-// revision that has never been attempted may still be authored further).
+// attempt exists under the owning task revision. INSERT is covered too:
+// mapping a criterion (or a context) onto something after attempts already
+// exist would make an already-recorded observation retroactively satisfy an
+// extra criterion, or be scoped to a context it was never evaluated against.
+//
+// These pick TASK-RUST-FRAMING-CHALLENGE-01's *qualification*-mode
+// administration specifically (not just LIMIT 1 on whatever administration
+// joins first): ceiling.test.ts permanently attaches a learner_attempt to
+// that task's *practice*-mode administration, so an unordered pick would
+// intermittently land on an administration another file already claimed,
+// making this file's own attempt-then-clean-up sequence order-dependent on
+// file execution order.
 // ---------------------------------------------------------------------------
 
 async function seededTaskVariantAndAdministration(): Promise<{
@@ -174,14 +230,56 @@ async function seededTaskVariantAndAdministration(): Promise<{
     JOIN assessment.task_revision tr ON tr.id = tv.task_revision_id
     JOIN assessment.task_template tt ON tt.id = tr.task_template_id
     JOIN assessment.task_administration ta ON ta.task_variant_id = tv.id
-    WHERE tt.canonical_code = 'TASK-RUST-FRAMING-CHALLENGE-01'
-    LIMIT 1
+    WHERE tt.canonical_code = 'TASK-RUST-FRAMING-CHALLENGE-01' AND ta.mode = 'qualification'
   `);
   const row = result.rows[0];
   if (typeof row?.task_variant_id !== "string" || typeof row?.administration_id !== "string") {
-    throw new Error("expected seeded task variant/administration not found");
+    throw new Error("expected seeded qualification-mode task variant/administration not found");
   }
   return { taskVariantId: row.task_variant_id, administrationId: row.administration_id };
+}
+
+// TASK-RUST-ASYNC-DIAGNOSIS-01 is never attempted anywhere in this suite —
+// used below as an unattempted re-parent target, to prove a row cannot be
+// silently detached from a frozen (attempted) parent onto an unfrozen one.
+async function unattemptedTaskVariantId(): Promise<string> {
+  const result = await db.execute(sql`
+    SELECT tv.id AS task_variant_id
+    FROM assessment.task_variant tv
+    JOIN assessment.task_revision tr ON tr.id = tv.task_revision_id
+    JOIN assessment.task_template tt ON tt.id = tr.task_template_id
+    WHERE tt.canonical_code = 'TASK-RUST-ASYNC-DIAGNOSIS-01'
+  `);
+  const id = result.rows[0]?.task_variant_id;
+  if (typeof id !== "string") throw new Error("expected seeded unattempted task variant not found");
+  return id;
+}
+
+async function unattemptedObservableCriterionMappingRef(): Promise<{
+  evidenceSpecObservableId: string;
+  objectiveCriterionId: string;
+}> {
+  const result = await db.execute(sql`
+    SELECT m.evidence_spec_observable_id, m.objective_criterion_id
+    FROM assessment.observable_criterion_mapping m
+    JOIN assessment.evidence_spec_observable obs ON obs.id = m.evidence_spec_observable_id
+    JOIN assessment.task_objective_evidence_spec spec ON spec.id = obs.evidence_spec_id
+    JOIN assessment.task_revision tr ON tr.id = spec.task_revision_id
+    JOIN assessment.task_template tt ON tt.id = tr.task_template_id
+    WHERE tt.canonical_code = 'TASK-RUST-ASYNC-DIAGNOSIS-01'
+    LIMIT 1
+  `);
+  const row = result.rows[0];
+  if (
+    typeof row?.evidence_spec_observable_id !== "string" ||
+    typeof row?.objective_criterion_id !== "string"
+  ) {
+    throw new Error("expected seeded unattempted observable_criterion_mapping row not found");
+  }
+  return {
+    evidenceSpecObservableId: row.evidence_spec_observable_id,
+    objectiveCriterionId: row.objective_criterion_id,
+  };
 }
 
 test("task_variant_context freezes once the variant has a recorded attempt", async () => {
@@ -216,8 +314,50 @@ test("task_variant_context freezes once the variant has a recorded attempt", asy
         .where(sql`task_variant_id = ${taskVariantId} AND dimension_code = 'programming_language'`),
       /recorded attempts.*frozen/i,
     );
+    await expectRejectionMatching(
+      db.insert(s.taskVariantContext).values({
+        taskVariantId,
+        dimensionCode: "cloud_provider",
+        contextValueId: await findContextValueId(db, "cloud_provider", "aws"),
+      }),
+      /recorded attempts.*frozen/i,
+    );
   } finally {
     // Delete the attempt first — the row itself stays frozen until it does.
+    await db.delete(s.learnerAttempt).where(sql`id = ${attempt.id}`);
+    await db
+      .delete(s.taskVariantContext)
+      .where(sql`task_variant_id = ${taskVariantId} AND dimension_code = 'programming_language'`);
+  }
+});
+
+test("a task_variant_context row cannot be re-parented off an attempted variant, even onto an unattempted one", async () => {
+  const { taskVariantId, administrationId } = await seededTaskVariantAndAdministration();
+  const unattemptedVariantId = await unattemptedTaskVariantId();
+  const rustValueId = await findContextValueId(db, "programming_language", "rust");
+  const learnerId = await createLearner(db, "immutability-task-variant-context-reparent");
+
+  await db.insert(s.taskVariantContext).values({
+    taskVariantId,
+    dimensionCode: "programming_language",
+    contextValueId: rustValueId,
+  });
+  const [attempt] = await db
+    .insert(s.learnerAttempt)
+    .values({ learnerId, taskAdministrationId: administrationId, attemptStatus: "completed" })
+    .returning({ id: s.learnerAttempt.id });
+  if (!attempt) throw new Error("failed to create attempt");
+
+  try {
+    await expectRejectionMatching(
+      db.execute(sql`
+        UPDATE assessment.task_variant_context
+        SET task_variant_id = ${unattemptedVariantId}
+        WHERE task_variant_id = ${taskVariantId} AND dimension_code = 'programming_language'
+      `),
+      /recorded attempts.*frozen/i,
+    );
+  } finally {
     await db.delete(s.learnerAttempt).where(sql`id = ${attempt.id}`);
     await db
       .delete(s.taskVariantContext)
@@ -271,6 +411,47 @@ test("observable_criterion_mapping freezes once its task revision has a recorded
         .where(
           sql`evidence_spec_observable_id = ${evidenceSpecObservableId} AND objective_criterion_id = ${objectiveCriterionId}`,
         ),
+      /recorded attempts.*frozen/i,
+    );
+    const otherCriterionRevisionId = await objectiveId(db, "RUST-NET-L3-001");
+    const otherCriterion = await db.execute(sql`
+      SELECT id FROM catalog.objective_criterion
+      WHERE objective_revision_id = ${otherCriterionRevisionId} AND code = 'no-data-loss'
+    `);
+    const otherCriterionId = otherCriterion.rows[0]?.id;
+    if (typeof otherCriterionId !== "string") throw new Error("expected criterion not found");
+    await expectRejectionMatching(
+      db.insert(s.observableCriterionMapping).values({
+        evidenceSpecObservableId,
+        objectiveCriterionId: otherCriterionId,
+      }),
+      /recorded attempts.*frozen/i,
+    );
+  } finally {
+    await db.delete(s.learnerAttempt).where(sql`id = ${attempt.id}`);
+  }
+});
+
+test("an observable_criterion_mapping cannot be re-parented off an attempted observable, even onto an unattempted one", async () => {
+  const { administrationId } = await seededTaskVariantAndAdministration();
+  const attempted = await seededObservableCriterionMappingRef();
+  const unattempted = await unattemptedObservableCriterionMappingRef();
+  const learnerId = await createLearner(db, "immutability-observable-mapping-reparent");
+
+  const [attempt] = await db
+    .insert(s.learnerAttempt)
+    .values({ learnerId, taskAdministrationId: administrationId, attemptStatus: "completed" })
+    .returning({ id: s.learnerAttempt.id });
+  if (!attempt) throw new Error("failed to create attempt");
+
+  try {
+    await expectRejectionMatching(
+      db.execute(sql`
+        UPDATE assessment.observable_criterion_mapping
+        SET evidence_spec_observable_id = ${unattempted.evidenceSpecObservableId}
+        WHERE evidence_spec_observable_id = ${attempted.evidenceSpecObservableId}
+          AND objective_criterion_id = ${attempted.objectiveCriterionId}
+      `),
       /recorded attempts.*frozen/i,
     );
   } finally {
@@ -360,6 +541,47 @@ test("a published role level revision's requirement context is frozen", async ()
       .where(sql`objective_requirement_id = ${requirement.id}`),
     /requirement contexts are frozen/i,
   );
+
+  // Re-parent escape: a second requirement group in a DRAFT (never
+  // published) revision of the same scratch role level. Moving the frozen
+  // context row onto it must still be rejected, based on the OLD
+  // (published) requirement — not silently allowed just because the NEW
+  // requirement's own revision isn't published.
+  const [draftRevision] = await db
+    .insert(s.roleLevelRevision)
+    .values({
+      roleLevelId: roleLevel.id,
+      frameworkReleaseId,
+      version: "0.0.2",
+      title: "Scratch draft",
+      description: "",
+      status: "draft",
+    })
+    .returning({ id: s.roleLevelRevision.id });
+  if (!draftRevision) throw new Error("failed to create draft scratch role level revision");
+  const [draftGroup] = await db
+    .insert(s.requirementGroup)
+    .values({ roleLevelRevisionId: draftRevision.id, operator: "all_of", label: "Draft group" })
+    .returning({ id: s.requirementGroup.id });
+  if (!draftGroup) throw new Error("failed to create draft scratch requirement group");
+  const [draftRequirement] = await db
+    .insert(s.objectiveRequirement)
+    .values({
+      requirementGroupId: draftGroup.id,
+      objectiveRevisionId,
+      requiredAssuranceClass: "B",
+    })
+    .returning({ id: s.objectiveRequirement.id });
+  if (!draftRequirement) throw new Error("failed to create draft scratch objective requirement");
+
+  await expectRejectionMatching(
+    db.execute(sql`
+      UPDATE qualification.objective_requirement_context
+      SET objective_requirement_id = ${draftRequirement.id}
+      WHERE objective_requirement_id = ${requirement.id}
+    `),
+    /requirement contexts are frozen/i,
+  );
 });
 
 // ---------------------------------------------------------------------------
@@ -412,7 +634,10 @@ test("a referenced context value's name and description remain mutable", async (
     SELECT name, description FROM catalog.context_value WHERE code = 'aws_govcloud'
   `);
   const beforeName = before.rows[0]?.name;
-  if (typeof beforeName !== "string") throw new Error("aws_govcloud not found");
+  const beforeDescription = before.rows[0]?.description;
+  if (typeof beforeName !== "string" || typeof beforeDescription !== "string") {
+    throw new Error("aws_govcloud not found");
+  }
 
   await db.execute(sql`
     UPDATE catalog.context_value
@@ -425,9 +650,12 @@ test("a referenced context value's name and description remain mutable", async (
   expect(after.rows[0]?.name).not.toBe(beforeName);
   expect(after.rows[0]?.description).toBe("updated description");
 
-  // Restore, so later tests (and the demo) see the seeded name.
+  // Restore both fields, so later tests (and the demo) see the seeded
+  // name/description — not just the name, as this used to.
   await db.execute(sql`
-    UPDATE catalog.context_value SET name = ${beforeName} WHERE code = 'aws_govcloud'
+    UPDATE catalog.context_value
+    SET name = ${beforeName}, description = ${beforeDescription}
+    WHERE code = 'aws_govcloud'
   `);
 });
 

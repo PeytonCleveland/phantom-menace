@@ -4,6 +4,12 @@
 -- enforce_objective_revision_immutability (0001) freezes the PARENT row of a
 -- published objective revision and nothing else. Mutating these children
 -- retroactively changes what already-recorded evidence meant.
+--
+-- Every parent-keyed function below checks BOTH the OLD and the NEW parent
+-- key on UPDATE, not just NEW: checking only NEW leaves an escape where an
+-- UPDATE silently re-parents a row away from a frozen parent onto an
+-- unfrozen one (or the reverse) without ever raising, since the NEW-side
+-- EXISTS check alone has nothing to say about where the row is leaving FROM.
 -- ---------------------------------------------------------------------------
 
 -- Covers INSERT as well as UPDATE/DELETE: adding a criterion, context policy,
@@ -16,23 +22,32 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  target_revision uuid;
+  old_revision uuid;
+  new_revision uuid;
 BEGIN
-  IF TG_OP = 'DELETE' THEN
-    target_revision := OLD.objective_revision_id;
-  ELSE
-    target_revision := NEW.objective_revision_id;
-  END IF;
+  old_revision := CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.objective_revision_id END;
+  new_revision := CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.objective_revision_id END;
 
-  IF EXISTS (
+  IF old_revision IS NOT NULL AND EXISTS (
     SELECT 1
     FROM catalog.framework_release_objective fro
     JOIN catalog.framework_release fr ON fr.id = fro.framework_release_id
-    WHERE fro.objective_revision_id = target_revision
+    WHERE fro.objective_revision_id = old_revision
       AND fr.status IN ('published', 'retired')
   ) THEN
     RAISE EXCEPTION 'objective revision % is published - its % rows are frozen',
-      target_revision, TG_TABLE_NAME;
+      old_revision, TG_TABLE_NAME;
+  END IF;
+
+  IF new_revision IS NOT NULL AND new_revision IS DISTINCT FROM old_revision AND EXISTS (
+    SELECT 1
+    FROM catalog.framework_release_objective fro
+    JOIN catalog.framework_release fr ON fr.id = fro.framework_release_id
+    WHERE fro.objective_revision_id = new_revision
+      AND fr.status IN ('published', 'retired')
+  ) THEN
+    RAISE EXCEPTION 'objective revision % is published - its % rows are frozen',
+      new_revision, TG_TABLE_NAME;
   END IF;
 
   IF TG_OP = 'DELETE' THEN
@@ -73,19 +88,27 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  target_implication uuid;
+  old_implication uuid;
+  new_implication uuid;
 BEGIN
-  IF TG_OP = 'DELETE' THEN
-    target_implication := OLD.implication_id;
-  ELSE
-    target_implication := NEW.implication_id;
-  END IF;
+  old_implication := CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.implication_id END;
+  new_implication := CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.implication_id END;
 
-  IF EXISTS (
+  IF old_implication IS NOT NULL AND EXISTS (
     SELECT 1
     FROM catalog.objective_evidence_implication i
     JOIN catalog.framework_release fr ON fr.id = i.framework_release_id
-    WHERE i.id = target_implication
+    WHERE i.id = old_implication
+      AND fr.status IN ('published', 'retired')
+  ) THEN
+    RAISE EXCEPTION 'implication belongs to a published release - its criteria are frozen';
+  END IF;
+
+  IF new_implication IS NOT NULL AND new_implication IS DISTINCT FROM old_implication AND EXISTS (
+    SELECT 1
+    FROM catalog.objective_evidence_implication i
+    JOIN catalog.framework_release fr ON fr.id = i.framework_release_id
+    WHERE i.id = new_implication
       AND fr.status IN ('published', 'retired')
   ) THEN
     RAISE EXCEPTION 'implication belongs to a published release - its criteria are frozen';
@@ -106,28 +129,42 @@ FOR EACH ROW EXECUTE FUNCTION governance.enforce_implication_criterion_immutabil
 
 -- Criterion mappings and variant contexts freeze once evidence exists under
 -- the owning task revision. A task revision has no published state of its
--- own; what makes these load-bearing is recorded attempts.
+-- own; what makes these load-bearing is recorded attempts. Covers INSERT
+-- too: mapping a criterion onto an observable after attempts already exist
+-- would make an already-recorded observation retroactively satisfy an
+-- additional criterion it was never evaluated against. Safe for the seed:
+-- createTask inserts these before any learner_attempt exists.
 CREATE OR REPLACE FUNCTION governance.enforce_observable_mapping_immutability()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  target_observable uuid;
+  old_observable uuid;
+  new_observable uuid;
 BEGIN
-  IF TG_OP = 'DELETE' THEN
-    target_observable := OLD.evidence_spec_observable_id;
-  ELSE
-    target_observable := NEW.evidence_spec_observable_id;
-  END IF;
+  old_observable := CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.evidence_spec_observable_id END;
+  new_observable := CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.evidence_spec_observable_id END;
 
-  IF EXISTS (
+  IF old_observable IS NOT NULL AND EXISTS (
     SELECT 1
     FROM assessment.evidence_spec_observable obs
     JOIN assessment.task_objective_evidence_spec spec ON spec.id = obs.evidence_spec_id
     JOIN assessment.task_variant tv ON tv.task_revision_id = spec.task_revision_id
     JOIN assessment.task_administration ta ON ta.task_variant_id = tv.id
     JOIN assessment.learner_attempt att ON att.task_administration_id = ta.id
-    WHERE obs.id = target_observable
+    WHERE obs.id = old_observable
+  ) THEN
+    RAISE EXCEPTION 'observable has recorded attempts - its criterion mapping is frozen';
+  END IF;
+
+  IF new_observable IS NOT NULL AND new_observable IS DISTINCT FROM old_observable AND EXISTS (
+    SELECT 1
+    FROM assessment.evidence_spec_observable obs
+    JOIN assessment.task_objective_evidence_spec spec ON spec.id = obs.evidence_spec_id
+    JOIN assessment.task_variant tv ON tv.task_revision_id = spec.task_revision_id
+    JOIN assessment.task_administration ta ON ta.task_variant_id = tv.id
+    JOIN assessment.learner_attempt att ON att.task_administration_id = ta.id
+    WHERE obs.id = new_observable
   ) THEN
     RAISE EXCEPTION 'observable has recorded attempts - its criterion mapping is frozen';
   END IF;
@@ -141,7 +178,7 @@ $$;
 --> statement-breakpoint
 
 CREATE TRIGGER trg_observable_criterion_mapping_immutability
-BEFORE UPDATE OR DELETE ON assessment.observable_criterion_mapping
+BEFORE INSERT OR UPDATE OR DELETE ON assessment.observable_criterion_mapping
 FOR EACH ROW EXECUTE FUNCTION governance.enforce_observable_mapping_immutability();
 --> statement-breakpoint
 
@@ -150,19 +187,26 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  target_variant uuid;
+  old_variant uuid;
+  new_variant uuid;
 BEGIN
-  IF TG_OP = 'DELETE' THEN
-    target_variant := OLD.task_variant_id;
-  ELSE
-    target_variant := NEW.task_variant_id;
-  END IF;
+  old_variant := CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.task_variant_id END;
+  new_variant := CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.task_variant_id END;
 
-  IF EXISTS (
+  IF old_variant IS NOT NULL AND EXISTS (
     SELECT 1
     FROM assessment.task_administration ta
     JOIN assessment.learner_attempt att ON att.task_administration_id = ta.id
-    WHERE ta.task_variant_id = target_variant
+    WHERE ta.task_variant_id = old_variant
+  ) THEN
+    RAISE EXCEPTION 'variant has recorded attempts - its context is frozen';
+  END IF;
+
+  IF new_variant IS NOT NULL AND new_variant IS DISTINCT FROM old_variant AND EXISTS (
+    SELECT 1
+    FROM assessment.task_administration ta
+    JOIN assessment.learner_attempt att ON att.task_administration_id = ta.id
+    WHERE ta.task_variant_id = new_variant
   ) THEN
     RAISE EXCEPTION 'variant has recorded attempts - its context is frozen';
   END IF;
@@ -176,7 +220,7 @@ $$;
 --> statement-breakpoint
 
 CREATE TRIGGER trg_task_variant_context_immutability
-BEFORE UPDATE OR DELETE ON assessment.task_variant_context
+BEFORE INSERT OR UPDATE OR DELETE ON assessment.task_variant_context
 FOR EACH ROW EXECUTE FUNCTION governance.enforce_variant_context_immutability();
 --> statement-breakpoint
 
@@ -186,20 +230,29 @@ RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 DECLARE
-  target_requirement uuid;
+  old_requirement uuid;
+  new_requirement uuid;
 BEGIN
-  IF TG_OP = 'DELETE' THEN
-    target_requirement := OLD.objective_requirement_id;
-  ELSE
-    target_requirement := NEW.objective_requirement_id;
-  END IF;
+  old_requirement := CASE WHEN TG_OP = 'INSERT' THEN NULL ELSE OLD.objective_requirement_id END;
+  new_requirement := CASE WHEN TG_OP = 'DELETE' THEN NULL ELSE NEW.objective_requirement_id END;
 
-  IF EXISTS (
+  IF old_requirement IS NOT NULL AND EXISTS (
     SELECT 1
     FROM qualification.objective_requirement oreq
     JOIN qualification.requirement_group g ON g.id = oreq.requirement_group_id
     JOIN qualification.role_level_revision rlr ON rlr.id = g.role_level_revision_id
-    WHERE oreq.id = target_requirement
+    WHERE oreq.id = old_requirement
+      AND rlr.status IN ('published', 'retired')
+  ) THEN
+    RAISE EXCEPTION 'role level revision is published - its requirement contexts are frozen';
+  END IF;
+
+  IF new_requirement IS NOT NULL AND new_requirement IS DISTINCT FROM old_requirement AND EXISTS (
+    SELECT 1
+    FROM qualification.objective_requirement oreq
+    JOIN qualification.requirement_group g ON g.id = oreq.requirement_group_id
+    JOIN qualification.role_level_revision rlr ON rlr.id = g.role_level_revision_id
+    WHERE oreq.id = new_requirement
       AND rlr.status IN ('published', 'retired')
   ) THEN
     RAISE EXCEPTION 'role level revision is published - its requirement contexts are frozen';
