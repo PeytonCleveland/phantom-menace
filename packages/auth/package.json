@@ -4,16 +4,23 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./domain-policy": "./src/domain-policy.ts",
+    "./email": "./src/email.ts"
   },
   "scripts": {
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.1121.0",
+    "@better-auth/passkey": "^1.7.2",
     "@lighthouse/db": "workspace:*",
-    "better-auth": "^1.7.2"
+    "better-auth": "^1.7.2",
+    "drizzle-orm": "^0.45.2"
   },
   "devDependencies": {
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
   }
 }
