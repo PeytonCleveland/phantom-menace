@@ -13,7 +13,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:seed": "tsx src/seed/index.ts",
     "db:demo": "tsx src/demo/scenario.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "test": "vitest run"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.2",
@@ -24,6 +25,7 @@
     "dotenv": "^17.2.0",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.20.0",
-    "typescript": "^7.0.2"
+    "typescript": "^7.0.2",
+    "vitest": "^3.2.7"
   }
 }

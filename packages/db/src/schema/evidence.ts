@@ -15,12 +15,14 @@ import {
 } from "drizzle-orm/pg-core";
 import { evidenceSpecObservable, learnerAttempt, taskObjectiveEvidenceSpec } from "./assessment";
 import { learningObjectiveRevision } from "./catalog";
+import { contextDimension, contextValue } from "./context";
 import {
   evidenceOriginEnum,
   evidenceSchema,
   evidenceStrengthEnum,
   observationResultEnum,
-  transferLevelEnum,
+  performanceScopeEnum,
+  transferDistanceEnum,
 } from "./enums";
 import { profile } from "./learner";
 
@@ -62,7 +64,8 @@ export const observation = evidenceSchema.table(
     evidenceStrength: evidenceStrengthEnum("evidence_strength").notNull(),
     origin: evidenceOriginEnum("origin").notNull(),
     independenceLevel: smallint("independence_level").notNull(),
-    transferLevel: transferLevelEnum("transfer_level").notNull(),
+    transferDistance: transferDistanceEnum("transfer_distance").notNull(),
+    performanceScope: performanceScopeEnum("performance_scope").notNull().default("focused"),
     rubricScore: numeric("rubric_score", { precision: 6, scale: 5 }),
     machineVerified: boolean("machine_verified").notNull().default(false),
     humanVerified: boolean("human_verified").notNull().default(false),
@@ -117,6 +120,30 @@ export const observableResult = evidenceSchema.table(
       foreignColumns: [evidenceSpecObservable.evidenceSpecId, evidenceSpecObservable.code],
     }),
     check("ck_observable_result_score", sql`score IS NULL OR score BETWEEN 0 AND 1`),
+  ],
+);
+
+export const observationContext = evidenceSchema.table(
+  "observation_context",
+  {
+    observationId: uuid("observation_id")
+      .notNull()
+      .references(() => observation.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    // Composite FK below (not a plain reference to contextValue.id) so a row
+    // cannot claim dimension `cloud_provider` while pointing at a value that
+    // actually belongs to `azure_region`.
+    contextValueId: uuid("context_value_id").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.observationId, t.dimensionCode] }),
+    foreignKey({
+      name: "fk_observation_context_value_dimension",
+      columns: [t.contextValueId, t.dimensionCode],
+      foreignColumns: [contextValue.id, contextValue.dimensionCode],
+    }),
   ],
 );
 

@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
   boolean,
+  char,
   check,
   integer,
   interval,
@@ -16,12 +17,14 @@ import {
 } from "drizzle-orm/pg-core";
 import { taskRevision } from "./assessment";
 import { capabilitySetRevision, frameworkRelease, learningObjectiveRevision } from "./catalog";
+import { contextDimension, contextValue } from "./context";
 import {
   observationResultEnum,
+  performanceScopeEnum,
   publicationStatusEnum,
   qualificationSchema,
   requirementOperatorEnum,
-  transferLevelEnum,
+  transferDistanceEnum,
 } from "./enums";
 import { profile } from "./learner";
 
@@ -119,8 +122,13 @@ export const objectiveRequirement = qualificationSchema.table(
     directEvidenceRequired: boolean("direct_evidence_required").notNull().default(false),
     proxyEvidenceAllowed: boolean("proxy_evidence_allowed").notNull().default(true),
     minimumIndependence: smallint("minimum_independence"),
-    minimumTransfer: transferLevelEnum("minimum_transfer"),
+    minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance"),
+    minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope"),
     maximumEvidenceAge: interval("maximum_evidence_age"),
+    // Governing and frozen. Compiled to an explicit value at role publication —
+    // never inherited dynamically from the objective afterwards, because the
+    // frozen revision must state what it actually required.
+    requiredAssuranceClass: char("required_assurance_class", { length: 1 }).notNull(),
   },
   (t) => [
     unique("uq_objective_requirement").on(t.requirementGroupId, t.objectiveRevisionId),
@@ -128,6 +136,30 @@ export const objectiveRequirement = qualificationSchema.table(
       "ck_objective_requirement_independence",
       sql`minimum_independence IS NULL OR minimum_independence BETWEEN 0 AND 4`,
     ),
+    check("ck_objective_requirement_assurance", sql`required_assurance_class IN ('A','B','C')`),
+  ],
+);
+
+export const objectiveRequirementContext = qualificationSchema.table(
+  "objective_requirement_context",
+  {
+    objectiveRequirementId: uuid("objective_requirement_id")
+      .notNull()
+      .references(() => objectiveRequirement.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    // Pin a value, or leave null and demand breadth. Never both.
+    contextValueId: uuid("context_value_id").references(() => contextValue.id),
+    minimumDistinctValues: integer("minimum_distinct_values").notNull().default(1),
+  },
+  (t) => [
+    primaryKey({ columns: [t.objectiveRequirementId, t.dimensionCode] }),
+    check(
+      "ck_requirement_context_pin_or_breadth",
+      sql`context_value_id IS NULL OR minimum_distinct_values = 1`,
+    ),
+    check("ck_requirement_context_minimum", sql`minimum_distinct_values >= 1`),
   ],
 );
 

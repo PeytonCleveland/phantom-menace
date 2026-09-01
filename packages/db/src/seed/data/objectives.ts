@@ -20,11 +20,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain the purpose of the transport layer, including what guarantees it adds over raw IP delivery and why applications depend on it.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "the transport layer's role in the network stack",
-    successCriteria: [
-      "Accurately describes what the transport layer provides beyond IP",
-      "Explanation holds up under probing with follow-up questions",
+    criteria: [
+      {
+        code: "describes-transport-value",
+        statement: "Accurately describes what the transport layer provides beyond IP",
+        kind: "success",
+      },
+      {
+        code: "holds-up-to-probing",
+        statement: "Explanation holds up under probing with follow-up questions",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -35,11 +49,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain TCP connection establishment and termination, including the three-way handshake, orderly shutdown, and what each step accomplishes.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP connection lifecycle",
-    successCriteria: [
-      "Correctly sequences handshake and termination steps",
-      "Explains the purpose of each step, not just the order",
+    criteria: [
+      {
+        code: "correct-handshake-sequence",
+        statement: "Correctly sequences handshake and termination steps",
+        kind: "success",
+      },
+      {
+        code: "explains-step-purpose",
+        statement: "Explains the purpose of each step, not just the order",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -50,11 +78,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain TCP byte-stream semantics: what ordering and delivery guarantees TCP provides, and what a read from a TCP socket can and cannot assume.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP byte-stream semantics",
-    successCriteria: [
-      "States TCP's ordering and delivery guarantees correctly",
-      "Correctly describes what a single read may return",
+    criteria: [
+      {
+        code: "states-ordering-guarantees",
+        statement: "States TCP's ordering and delivery guarantees correctly",
+        kind: "success",
+      },
+      {
+        code: "describes-single-read-return",
+        statement: "Correctly describes what a single read may return",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -65,11 +107,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain why TCP does not preserve application message boundaries and what this implies for any protocol built on top of TCP.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "absence of message boundaries in TCP",
-    successCriteria: [
-      "Explains the causal mechanism (segmentation, buffering, coalescing)",
-      "States the implication: applications must frame their own messages",
+    criteria: [
+      {
+        code: "explains-causal-mechanism",
+        statement: "Explains the causal mechanism (segmentation, buffering, coalescing)",
+        kind: "success",
+      },
+      {
+        code: "states-framing-implication",
+        statement: "States the implication: applications must frame their own messages",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -80,11 +136,25 @@ export const objectives: ObjectiveInput[] = [
       "Given a sequence of TCP reads and buffer states, predict whether a complete application message is available and explain how partial reads and writes affect the result.",
     masteryLevel: 1,
     verbCode: "predict",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "partial read/write behavior over TCP",
-    successCriteria: [
-      "Correct predictions across unseen read/buffer scenarios",
-      "Rationale tied to byte-stream semantics rather than memorized cases",
+    criteria: [
+      {
+        code: "correct-unseen-predictions",
+        statement: "Correct predictions across unseen read/buffer scenarios",
+        kind: "success",
+      },
+      {
+        code: "rationale-tied-to-semantics",
+        statement: "Rationale tied to byte-stream semantics rather than memorized cases",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -95,11 +165,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain EOF, shutdown, and half-closed TCP connections, including what a zero-length read means and how each side's close affects the other.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP EOF and shutdown behavior",
-    successCriteria: [
-      "Correctly interprets a zero-length read",
-      "Explains half-closed connection behavior in both directions",
+    criteria: [
+      {
+        code: "interprets-zero-length-read",
+        statement: "Correctly interprets a zero-length read",
+        kind: "success",
+      },
+      {
+        code: "explains-half-closed-behavior",
+        statement: "Explains half-closed connection behavior in both directions",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -110,11 +194,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain UDP datagram semantics: message boundaries, lack of delivery and ordering guarantees, and what a UDP receive returns.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP datagram semantics",
-    successCriteria: [
-      "Correctly contrasts datagram boundaries with TCP's byte stream",
-      "States delivery and ordering non-guarantees accurately",
+    criteria: [
+      {
+        code: "contrasts-datagram-boundaries",
+        statement: "Correctly contrasts datagram boundaries with TCP's byte stream",
+        kind: "success",
+      },
+      {
+        code: "states-non-guarantees",
+        statement: "States delivery and ordering non-guarantees accurately",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -125,11 +223,25 @@ export const objectives: ObjectiveInput[] = [
       "Given a UDP communication scenario, predict the consequences of datagram loss, duplication, and reordering for the application.",
     masteryLevel: 1,
     verbCode: "predict",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP failure modes",
-    successCriteria: [
-      "Correct predictions for loss, duplication, and reordering cases",
-      "Identifies which applications tolerate which failure modes",
+    criteria: [
+      {
+        code: "correct-failure-predictions",
+        statement: "Correct predictions for loss, duplication, and reordering cases",
+        kind: "success",
+      },
+      {
+        code: "identifies-tolerant-applications",
+        statement: "Identifies which applications tolerate which failure modes",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -140,11 +252,25 @@ export const objectives: ObjectiveInput[] = [
       "Distinguish appropriate TCP and UDP use cases for representative application requirements and state the decisive difference driving each choice.",
     masteryLevel: 1,
     verbCode: "distinguish",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "transport protocol selection",
-    successCriteria: [
-      "Correct classification across varied application scenarios",
-      "Explicit basis for each distinction",
+    criteria: [
+      {
+        code: "correct-protocol-classification",
+        statement: "Correct classification across varied application scenarios",
+        kind: "success",
+      },
+      {
+        code: "explicit-distinction-basis",
+        statement: "Explicit basis for each distinction",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -159,11 +285,25 @@ export const objectives: ObjectiveInput[] = [
       "Using standard tools (such as ss, netstat, or lsof), inspect active TCP connection state on a host and correctly interpret connection states, addresses, and ports.",
     masteryLevel: 2,
     verbCode: "interpret",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "live TCP connection state",
-    successCriteria: [
-      "Selects an appropriate inspection tool",
-      "Correctly interprets connection states and endpoints",
+    criteria: [
+      {
+        code: "selects-appropriate-tool",
+        statement: "Selects an appropriate inspection tool",
+        kind: "success",
+      },
+      {
+        code: "interprets-states-and-endpoints",
+        statement: "Correctly interprets connection states and endpoints",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -174,11 +314,25 @@ export const objectives: ObjectiveInput[] = [
       "Verify whether a TCP endpoint is reachable and accepting connections, distinguishing connection refusal, timeout, and successful establishment.",
     masteryLevel: 2,
     verbCode: "verify",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP endpoint reachability",
-    successCriteria: [
-      "Uses appropriate checks (e.g. nc, curl, ss) to test the endpoint",
-      "Correctly distinguishes refusal, timeout, and success",
+    criteria: [
+      {
+        code: "uses-appropriate-checks",
+        statement: "Uses appropriate checks (e.g. nc, curl, ss) to test the endpoint",
+        kind: "success",
+      },
+      {
+        code: "distinguishes-refusal-timeout-success",
+        statement: "Correctly distinguishes refusal, timeout, and success",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -189,11 +343,25 @@ export const objectives: ObjectiveInput[] = [
       "Interpret common TCP connection failures (connection refused, reset, timeout) and state the most likely causes of each.",
     masteryLevel: 2,
     verbCode: "interpret",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP failure signals",
-    successCriteria: [
-      "Accurate interpretation across representative failure variations",
-      "States likely causes and next diagnostic step for each",
+    criteria: [
+      {
+        code: "accurate-failure-interpretation",
+        statement: "Accurate interpretation across representative failure variations",
+        kind: "success",
+      },
+      {
+        code: "states-causes-and-next-step",
+        statement: "States likely causes and next diagnostic step for each",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -204,11 +372,25 @@ export const objectives: ObjectiveInput[] = [
       "Send, receive, and inspect UDP datagrams in a bounded environment using standard tooling, confirming datagram boundaries and observing loss behavior.",
     masteryLevel: 2,
     verbCode: "execute",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP datagram exchange",
-    successCriteria: [
-      "Successfully exchanges datagrams between two endpoints",
-      "Observes and correctly reports datagram boundary behavior",
+    criteria: [
+      {
+        code: "exchanges-datagrams-successfully",
+        statement: "Successfully exchanges datagrams between two endpoints",
+        kind: "success",
+      },
+      {
+        code: "reports-boundary-behavior",
+        statement: "Observes and correctly reports datagram boundary behavior",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -223,13 +405,31 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose a representative TCP connectivity failure in an unfamiliar environment: form hypotheses, gather discriminating evidence, identify the causal mechanism, and verify the conclusion.",
     masteryLevel: 3,
     verbCode: "diagnose",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP connectivity failure",
-    successCriteria: [
-      "Hypotheses are plausible and tested with discriminating evidence",
-      "Causal conclusion is verified, not guessed",
+    criteria: [
+      {
+        code: "plausible-tested-hypotheses",
+        statement: "Hypotheses are plausible and tested with discriminating evidence",
+        kind: "success",
+      },
+      {
+        code: "verified-causal-conclusion",
+        statement: "Causal conclusion is verified, not guessed",
+        kind: "success",
+      },
+      {
+        code: "no-unverified-cause",
+        statement: "Does not declare a cause without verification",
+        kind: "critical_error",
+      },
     ],
-    criticalErrors: ["declares a cause without verification"],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -239,11 +439,25 @@ export const objectives: ObjectiveInput[] = [
       "Evaluate transport options for a bounded application requirement and justify the selection against explicit reliability, latency, and complexity criteria.",
     masteryLevel: 3,
     verbCode: "evaluate",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "transport approach selection",
-    successCriteria: [
-      "Criteria are explicit and appropriate to the requirement",
-      "Recommendation is substantiated with accurate findings",
+    criteria: [
+      {
+        code: "explicit-appropriate-criteria",
+        statement: "Criteria are explicit and appropriate to the requirement",
+        kind: "success",
+      },
+      {
+        code: "substantiated-recommendation",
+        statement: "Recommendation is substantiated with accurate findings",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -254,14 +468,36 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose intermittent or multi-layer transport failures under ambiguous or incomplete evidence, ruling out competing explanations across layers.",
     masteryLevel: 4,
     verbCode: "diagnose",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "complex transport failure",
-    successCriteria: [
-      "Systematically discriminates between multi-layer explanations",
-      "Handles false leads without fixating on an early hypothesis",
-      "Conclusion verified under the intermittent condition",
+    criteria: [
+      {
+        code: "discriminates-multilayer-explanations",
+        statement: "Systematically discriminates between multi-layer explanations",
+        kind: "success",
+      },
+      {
+        code: "handles-false-leads",
+        statement: "Handles false leads without fixating on an early hypothesis",
+        kind: "success",
+      },
+      {
+        code: "verified-under-intermittent-condition",
+        statement: "Conclusion verified under the intermittent condition",
+        kind: "success",
+      },
+      {
+        code: "no-undemonstrated-fix",
+        statement: "Does not ship a fix without demonstrating the causal mechanism",
+        kind: "critical_error",
+      },
     ],
-    criticalErrors: ["ships a fix without demonstrating the causal mechanism"],
     primaryCompetencyCode: TRANSPORT,
   },
   {
@@ -271,11 +507,25 @@ export const objectives: ObjectiveInput[] = [
       "Evaluate competing transport designs under interacting reliability, latency, and operational constraints and justify tradeoffs for a materially novel context.",
     masteryLevel: 4,
     verbCode: "evaluate",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "transport tradeoff analysis",
-    successCriteria: [
-      "Tradeoff analysis addresses interacting constraints, not one dimension",
-      "Judgment substantiated with evidence and explicit criteria",
+    criteria: [
+      {
+        code: "addresses-interacting-constraints",
+        statement: "Tradeoff analysis addresses interacting constraints, not one dimension",
+        kind: "success",
+      },
+      {
+        code: "substantiated-judgment",
+        statement: "Judgment substantiated with evidence and explicit criteria",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -287,11 +537,25 @@ export const objectives: ObjectiveInput[] = [
       "Establish and validate transport engineering practices, standards, or abstractions that measurably improve reliability across multiple systems or teams.",
     masteryLevel: 5,
     verbCode: "establish",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "organizational transport engineering practice",
-    successCriteria: [
-      "Practice or standard adopted beyond a single system or team",
-      "Longitudinal evidence of measurable reliability improvement",
+    criteria: [
+      {
+        code: "adopted-beyond-single-team",
+        statement: "Practice or standard adopted beyond a single system or team",
+        kind: "success",
+      },
+      {
+        code: "longitudinal-reliability-evidence",
+        statement: "Longitudinal evidence of measurable reliability improvement",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: TRANSPORT,
   },
@@ -306,11 +570,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain how Rust's TcpStream represents a TCP byte stream, including what read and write calls correspond to at the transport level.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TcpStream's byte-stream model",
-    successCriteria: [
-      "Maps TcpStream read/write behavior to TCP semantics correctly",
-      "Explanation survives probing with edge cases (short reads, EOF)",
+    criteria: [
+      {
+        code: "maps-behavior-to-semantics",
+        statement: "Maps TcpStream read/write behavior to TCP semantics correctly",
+        kind: "success",
+      },
+      {
+        code: "survives-edge-case-probing",
+        statement: "Explanation survives probing with edge cases (short reads, EOF)",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -321,11 +599,25 @@ export const objectives: ObjectiveInput[] = [
       "Trace bytes through a simple Rust read-buffer operation, accounting for the buffer contents, the returned byte count, and any leftover data at each step.",
     masteryLevel: 1,
     verbCode: "trace",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "read-buffer state transitions",
-    successCriteria: [
-      "Accurately reports intermediate buffer states and counts",
-      "Accounts for leftover and unconsumed bytes, not just the final state",
+    criteria: [
+      {
+        code: "reports-buffer-states-and-counts",
+        statement: "Accurately reports intermediate buffer states and counts",
+        kind: "success",
+      },
+      {
+        code: "accounts-for-leftover-bytes",
+        statement: "Accounts for leftover and unconsumed bytes, not just the final state",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -336,11 +628,25 @@ export const objectives: ObjectiveInput[] = [
       "Explain how Rust represents I/O success, EOF, and error conditions through Result, Ok(0), and io::Error, and what each obligates the caller to handle.",
     masteryLevel: 1,
     verbCode: "explain",
-    assuranceClass: "A",
+    defaultAssuranceClass: "A",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "Rust I/O result representation",
-    successCriteria: [
-      "Correctly distinguishes Ok(n), Ok(0), and Err cases",
-      "States caller obligations for each condition",
+    criteria: [
+      {
+        code: "distinguishes-ok-err-cases",
+        statement: "Correctly distinguishes Ok(n), Ok(0), and Err cases",
+        kind: "success",
+      },
+      {
+        code: "states-caller-obligations",
+        statement: "States caller obligations for each condition",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -355,11 +661,25 @@ export const objectives: ObjectiveInput[] = [
       "Implement code that creates and connects a Rust TcpStream to a specified endpoint, handling connection errors without panicking.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TcpStream connection",
-    successCriteria: [
-      "Connection succeeds against a live endpoint",
-      "Connection failure surfaces as a handled error, not a panic",
+    criteria: [
+      {
+        code: "connection-succeeds",
+        statement: "Connection succeeds against a live endpoint",
+        kind: "success",
+      },
+      {
+        code: "failure-handled-not-panicked",
+        statement: "Connection failure surfaces as a handled error, not a panic",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -370,13 +690,31 @@ export const objectives: ObjectiveInput[] = [
       "Implement code that reads bytes from a TcpStream into a mutable buffer and correctly uses the returned byte count to bound further processing.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "buffered socket reads",
-    successCriteria: [
-      "Only the returned count of bytes is treated as valid data",
-      "Buffer reuse does not expose stale bytes",
+    criteria: [
+      {
+        code: "bounds-by-returned-count",
+        statement: "Only the returned count of bytes is treated as valid data",
+        kind: "success",
+      },
+      {
+        code: "no-stale-byte-exposure",
+        statement: "Buffer reuse does not expose stale bytes",
+        kind: "success",
+      },
+      {
+        code: "no-full-buffer-processing",
+        statement: "Does not process the full buffer regardless of bytes read",
+        kind: "critical_error",
+      },
     ],
-    criticalErrors: ["processes the full buffer regardless of bytes read"],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -386,15 +724,35 @@ export const objectives: ObjectiveInput[] = [
       "Implement reading logic over a Rust TcpStream that correctly handles partial reads, accumulating data until a complete logical unit is available.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "partial-read handling",
-    successCriteria: [
-      "Incomplete data is preserved across successive reads",
-      "Behavior is correct for any read-boundary split",
-    ],
-    criticalErrors: [
-      "assumes one read returns one complete message",
-      "discards bytes from an incomplete unit",
+    criteria: [
+      {
+        code: "no-one-read-one-message",
+        statement: "Does not assume one read returns one complete message",
+        kind: "critical_error",
+      },
+      {
+        code: "no-discarded-bytes",
+        statement: "Does not discard bytes from an incomplete unit",
+        kind: "critical_error",
+      },
+      {
+        code: "preserves-incomplete-data",
+        statement: "Incomplete data is preserved across successive reads",
+        kind: "success",
+      },
+      {
+        code: "correct-for-any-split",
+        statement: "Behavior is correct for any read-boundary split",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -405,13 +763,31 @@ export const objectives: ObjectiveInput[] = [
       "Implement socket-handling code that correctly handles EOF (Ok(0)) and common io::Error conditions, terminating or recovering according to protocol state.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "EOF and I/O error handling",
-    successCriteria: [
-      "EOF is detected and handled according to protocol state",
-      "Interrupted and WouldBlock conditions are handled appropriately",
+    criteria: [
+      {
+        code: "eof-handled-per-protocol",
+        statement: "EOF is detected and handled according to protocol state",
+        kind: "success",
+      },
+      {
+        code: "handles-interrupted-wouldblock",
+        statement: "Interrupted and WouldBlock conditions are handled appropriately",
+        kind: "success",
+      },
+      {
+        code: "no-eof-infinite-loop",
+        statement: "Does not treat EOF as an infinite-loop read of zero bytes",
+        kind: "critical_error",
+      },
     ],
-    criticalErrors: ["treats EOF as an infinite-loop read of zero bytes"],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -421,11 +797,25 @@ export const objectives: ObjectiveInput[] = [
       "Implement writing logic that delivers a complete logical message over a TcpStream despite partial writes, using write_all or an equivalent verified loop.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "partial-write handling",
-    successCriteria: [
-      "All bytes of the logical message are delivered exactly once",
-      "Write errors are surfaced, not swallowed",
+    criteria: [
+      {
+        code: "delivers-message-exactly-once",
+        statement: "All bytes of the logical message are delivered exactly once",
+        kind: "success",
+      },
+      {
+        code: "surfaces-write-errors",
+        statement: "Write errors are surfaced, not swallowed",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -436,11 +826,25 @@ export const objectives: ObjectiveInput[] = [
       "Configure a Rust TCP socket's blocking behavior, read/write timeouts, and shutdown semantics to satisfy stated requirements, and verify the resulting behavior.",
     masteryLevel: 2,
     verbCode: "configure",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "socket configuration",
-    successCriteria: [
-      "Configuration satisfies the stated requirements",
-      "Resulting behavior is verified, including the timeout path",
+    criteria: [
+      {
+        code: "satisfies-stated-requirements",
+        statement: "Configuration satisfies the stated requirements",
+        kind: "success",
+      },
+      {
+        code: "verifies-timeout-path",
+        statement: "Resulting behavior is verified, including the timeout path",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -451,11 +855,25 @@ export const objectives: ObjectiveInput[] = [
       "Implement sending and receiving datagrams with Rust's UdpSocket, respecting datagram boundaries and handling truncation behavior correctly.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "UDP datagram exchange in Rust",
-    successCriteria: [
-      "Datagrams are exchanged with boundaries preserved",
-      "Receive-buffer sizing and truncation behavior handled correctly",
+    criteria: [
+      {
+        code: "preserves-datagram-boundaries",
+        statement: "Datagrams are exchanged with boundaries preserved",
+        kind: "success",
+      },
+      {
+        code: "handles-truncation-correctly",
+        statement: "Receive-buffer sizing and truncation behavior handled correctly",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -470,25 +888,49 @@ export const objectives: ObjectiveInput[] = [
       "Independently implement a framed-message reader over a Rust TcpStream that preserves incomplete data across reads, handles multiple frames per read, handles EOF and I/O errors correctly, and does not lose or duplicate bytes.",
     masteryLevel: 3,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "framed-message reader",
     conditions: {
       context: "unfamiliar but reasonably scoped codebase",
       assistance: "normal technical documentation permitted, no step-level help",
     },
-    successCriteria: [
-      "Incomplete frame data is preserved across arbitrary read boundaries",
-      "Multiple complete frames within one read are all processed",
-      "Frame headers and bodies split across reads are handled",
-      "EOF and I/O errors are handled according to protocol state",
-      "No bytes are lost, duplicated, or reordered",
-      "Behavior is verified with tests covering varied read boundaries",
-    ],
-    criticalErrors: [
-      "assumes one read equals one message",
-      "discards incomplete frame bytes",
-      "silently loses or duplicates bytes",
-      "declares success without verification",
+    criteria: [
+      {
+        code: "preserve-incomplete-data",
+        statement: "Incomplete frame data is preserved across arbitrary read boundaries",
+        kind: "success",
+      },
+      {
+        code: "multiple-frames-per-read",
+        statement: "Multiple complete frames within one read are all processed",
+        kind: "success",
+      },
+      {
+        code: "split-header-and-body",
+        statement: "Frame headers and bodies split across reads are handled",
+        kind: "success",
+      },
+      {
+        code: "eof-and-io-errors",
+        statement: "EOF and I/O errors are handled according to protocol state",
+        kind: "success",
+      },
+      {
+        code: "no-data-loss",
+        statement: "No bytes are lost, duplicated, or reordered",
+        kind: "critical_error",
+      },
+      {
+        code: "boundary-verification",
+        statement: "Behavior is verified with tests covering varied read boundaries",
+        kind: "verification",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -499,12 +941,30 @@ export const objectives: ObjectiveInput[] = [
       "Independently implement framed-message writing over a Rust TcpStream that emits well-formed frames, completes partial writes, and surfaces write failures correctly.",
     masteryLevel: 3,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "framed-message writer",
-    successCriteria: [
-      "Frames are well-formed and parseable by a conforming reader",
-      "Partial writes are completed; no interleaved or truncated frames",
-      "Write failures are surfaced with usable error context",
+    criteria: [
+      {
+        code: "well-formed-parseable-frames",
+        statement: "Frames are well-formed and parseable by a conforming reader",
+        kind: "success",
+      },
+      {
+        code: "no-interleaved-truncated-frames",
+        statement: "Partial writes are completed; no interleaved or truncated frames",
+        kind: "success",
+      },
+      {
+        code: "surfaces-failures-with-context",
+        statement: "Write failures are surfaced with usable error context",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -515,14 +975,36 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose a representative TCP framing defect in an unfamiliar Rust service: reproduce the failure, isolate the causal mechanism, and verify the correction.",
     masteryLevel: 3,
     verbCode: "diagnose",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "TCP framing defect",
-    successCriteria: [
-      "Failure is reproduced deterministically or characterized statistically",
-      "Causal mechanism is demonstrated with discriminating evidence",
-      "Correction is verified against the original failure mode",
+    criteria: [
+      {
+        code: "reproduces-or-characterizes-failure",
+        statement: "Failure is reproduced deterministically or characterized statistically",
+        kind: "success",
+      },
+      {
+        code: "demonstrates-causal-mechanism",
+        statement: "Causal mechanism is demonstrated with discriminating evidence",
+        kind: "success",
+      },
+      {
+        code: "verifies-correction-against-failure",
+        statement: "Correction is verified against the original failure mode",
+        kind: "success",
+      },
+      {
+        code: "no-guessed-fix",
+        statement: "Does not guess a fix without demonstrating the cause",
+        kind: "critical_error",
+      },
     ],
-    criticalErrors: ["guesses a fix without demonstrating the cause"],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -532,12 +1014,30 @@ export const objectives: ObjectiveInput[] = [
       "Design tests for Rust network-I/O code that exercise partial reads, split frames, EOF, and error paths, with traceability from each test to the failure mode it guards against.",
     masteryLevel: 3,
     verbCode: "design",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "network-I/O test design",
-    successCriteria: [
-      "Tests cover read-boundary, EOF, and error-path edge cases",
-      "Each test is traceable to a specific failure mode",
-      "Tests are deterministic",
+    criteria: [
+      {
+        code: "covers-key-edge-cases",
+        statement: "Tests cover read-boundary, EOF, and error-path edge cases",
+        kind: "success",
+      },
+      {
+        code: "traceable-to-failure-mode",
+        statement: "Each test is traceable to a specific failure mode",
+        kind: "success",
+      },
+      {
+        code: "deterministic-tests",
+        statement: "Tests are deterministic",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -552,14 +1052,36 @@ export const objectives: ObjectiveInput[] = [
       "Diagnose complex asynchronous Rust network-I/O failures involving cancellation, framing, timeout, or backpressure interactions under ambiguous evidence.",
     masteryLevel: 4,
     verbCode: "diagnose",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "async network-I/O failure",
-    successCriteria: [
-      "Discriminates among interacting async failure mechanisms",
-      "Evidence rules out plausible competing explanations",
-      "Conclusion and correction verified under realistic load",
+    criteria: [
+      {
+        code: "discriminates-async-mechanisms",
+        statement: "Discriminates among interacting async failure mechanisms",
+        kind: "success",
+      },
+      {
+        code: "rules-out-competing-explanations",
+        statement: "Evidence rules out plausible competing explanations",
+        kind: "success",
+      },
+      {
+        code: "verified-under-realistic-load",
+        statement: "Conclusion and correction verified under realistic load",
+        kind: "success",
+      },
+      {
+        code: "no-unverified-attribution",
+        statement: "Does not attribute the failure to an unverified mechanism",
+        kind: "critical_error",
+      },
     ],
-    criticalErrors: ["attributes the failure to an unverified mechanism"],
     primaryCompetencyCode: RUST_NET,
   },
   {
@@ -569,11 +1091,25 @@ export const objectives: ObjectiveInput[] = [
       "Evaluate and adapt a network-I/O architecture under competing performance and reliability constraints, justifying tradeoffs with measurements.",
     masteryLevel: 4,
     verbCode: "evaluate",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "network-I/O architecture",
-    successCriteria: [
-      "Tradeoffs are justified with measurements, not intuition alone",
-      "Adaptation preserves correctness properties (no data loss or duplication)",
+    criteria: [
+      {
+        code: "justified-with-measurements",
+        statement: "Tradeoffs are justified with measurements, not intuition alone",
+        kind: "success",
+      },
+      {
+        code: "preserves-correctness-properties",
+        statement: "Adaptation preserves correctness properties (no data loss or duplication)",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -584,11 +1120,25 @@ export const objectives: ObjectiveInput[] = [
       "Integrate robust framed I/O into a distributed Rust service that behaves correctly under partial failure, including reconnection, retry, and backpressure handling.",
     masteryLevel: 4,
     verbCode: "integrate",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "framed I/O in a distributed service",
-    successCriteria: [
-      "End-to-end behavior verified across component boundaries",
-      "Partial-failure paths (disconnect, retry, backpressure) behave correctly",
+    criteria: [
+      {
+        code: "verified-across-boundaries",
+        statement: "End-to-end behavior verified across component boundaries",
+        kind: "success",
+      },
+      {
+        code: "correct-partial-failure-paths",
+        statement: "Partial-failure paths (disconnect, retry, backpressure) behave correctly",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -599,11 +1149,25 @@ export const objectives: ObjectiveInput[] = [
       "Design and validate reusable Rust network-I/O abstractions that are adopted across multiple production systems, with evidence of correctness and adoption.",
     masteryLevel: 5,
     verbCode: "design",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "reusable network-I/O abstraction",
-    successCriteria: [
-      "Abstraction adopted by multiple production systems",
-      "Correctness validated across adopters over time",
+    criteria: [
+      {
+        code: "adopted-by-multiple-systems",
+        statement: "Abstraction adopted by multiple production systems",
+        kind: "success",
+      },
+      {
+        code: "validated-across-adopters",
+        statement: "Correctness validated across adopters over time",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -615,11 +1179,25 @@ export const objectives: ObjectiveInput[] = [
       "Establish engineering practices, standards, or tooling that measurably reduce network-protocol defects across multiple teams, with longitudinal evidence.",
     masteryLevel: 5,
     verbCode: "establish",
-    assuranceClass: "C",
+    defaultAssuranceClass: "C",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: false,
+      constructedResponseSupported: true,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "organizational network-protocol practice",
-    successCriteria: [
-      "Practice adopted across multiple teams",
-      "Measurable defect reduction over time attributable to the practice",
+    criteria: [
+      {
+        code: "adopted-across-teams",
+        statement: "Practice adopted across multiple teams",
+        kind: "success",
+      },
+      {
+        code: "measurable-defect-reduction",
+        statement: "Measurable defect reduction over time attributable to the practice",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: RUST_NET,
   },
@@ -634,11 +1212,25 @@ export const objectives: ObjectiveInput[] = [
       "Implement buffer-handling functions that use mutable slices safely: correct sub-slicing by returned counts, no aliasing violations, and no reliance on stale data.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "mutable slice handling",
-    successCriteria: [
-      "Sub-slices are bounded by valid counts",
-      "Code compiles without fighting the borrow checker via unnecessary clones",
+    criteria: [
+      {
+        code: "bounded-by-valid-counts",
+        statement: "Sub-slices are bounded by valid counts",
+        kind: "success",
+      },
+      {
+        code: "compiles-without-unnecessary-clones",
+        statement: "Code compiles without fighting the borrow checker via unnecessary clones",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: "rust.ownership-and-borrowing",
   },
@@ -649,11 +1241,25 @@ export const objectives: ObjectiveInput[] = [
       "Implement I/O code that handles Result and io::Error values idiomatically: propagation with ?, matching on error kinds where behavior differs, and no unwrap on fallible I/O paths.",
     masteryLevel: 2,
     verbCode: "implement",
-    assuranceClass: "B",
+    defaultAssuranceClass: "B",
+    claimEvidenceConstraints: {
+      practicalPerformanceRequired: true,
+      constructedResponseSupported: false,
+      multipleChoiceAloneSufficient: false,
+      directObservationPossible: true,
+    },
     performanceObject: "Result and io::Error handling",
-    successCriteria: [
-      "Errors are propagated or handled deliberately, never unwrapped on I/O paths",
-      "Error kinds with distinct handling requirements are distinguished",
+    criteria: [
+      {
+        code: "deliberate-error-handling",
+        statement: "Errors are propagated or handled deliberately, never unwrapped on I/O paths",
+        kind: "success",
+      },
+      {
+        code: "distinguishes-error-kinds",
+        statement: "Error kinds with distinct handling requirements are distinguished",
+        kind: "success",
+      },
     ],
     primaryCompetencyCode: "rust.error-handling",
   },

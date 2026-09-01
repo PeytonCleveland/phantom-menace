@@ -16,10 +16,13 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { contextDimension, contextValue } from "./context";
 import {
   assertionStateEnum,
   catalogSchema,
   competencyRelationshipTypeEnum,
+  contextPolicyEnum,
+  criterionKindEnum,
   evidenceImplicationTypeEnum,
   evidenceStrengthEnum,
   membershipRoleEnum,
@@ -226,11 +229,13 @@ export const learningObjectiveRevision = catalogSchema.table(
     verbCode: text("verb_code")
       .notNull()
       .references(() => verbDefinition.code),
-    assuranceClass: char("assurance_class", { length: 1 }).notNull(),
+    // Advisory. It seeds the initial value when authoring a role requirement
+    // and governs nothing on its own — how much proof a qualification demands
+    // lives on qualification.objective_requirement.required_assurance_class.
+    // A = Lightweight, B = Performance, C = High Assurance.
+    defaultAssuranceClass: char("default_assurance_class", { length: 1 }).notNull(),
     performanceObject: text("performance_object").notNull().default(""),
     conditions: jsonb("conditions").notNull().default(sql`'{}'::jsonb`),
-    successCriteria: jsonb("success_criteria").notNull().default(sql`'[]'::jsonb`),
-    criticalErrors: jsonb("critical_errors").notNull().default(sql`'[]'::jsonb`),
     performanceModes: text("performance_modes").array().notNull().default(sql`ARRAY[]::text[]`),
     tags: text("tags").array().notNull().default(sql`ARRAY[]::text[]`),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
@@ -240,7 +245,7 @@ export const learningObjectiveRevision = catalogSchema.table(
     unique("uq_objective_revision_no").on(t.learningObjectiveId, t.revisionNo),
     check("ck_objective_revision_no_positive", sql`revision_no > 0`),
     check("ck_objective_mastery_level", sql`mastery_level BETWEEN 1 AND 5`),
-    check("ck_objective_assurance_class", sql`assurance_class IN ('A', 'B', 'C')`),
+    check("ck_objective_default_assurance_class", sql`default_assurance_class IN ('A', 'B', 'C')`),
   ],
 );
 
@@ -255,6 +260,97 @@ export const frameworkReleaseObjective = catalogSchema.table(
       .references(() => learningObjectiveRevision.id),
   },
   (t) => [primaryKey({ columns: [t.frameworkReleaseId, t.objectiveRevisionId] })],
+);
+
+export const objectiveContextPolicy = catalogSchema.table(
+  "objective_context_policy",
+  {
+    objectiveRevisionId: uuid("objective_revision_id")
+      .notNull()
+      .references(() => learningObjectiveRevision.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    policy: contextPolicyEnum("policy").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.objectiveRevisionId, t.dimensionCode] })],
+);
+
+export const objectiveContextAllowedValue = catalogSchema.table(
+  "objective_context_allowed_value",
+  {
+    objectiveRevisionId: uuid("objective_revision_id")
+      .notNull()
+      .references(() => learningObjectiveRevision.id),
+    dimensionCode: text("dimension_code").notNull(),
+    contextValueId: uuid("context_value_id")
+      .notNull()
+      .references(() => contextValue.id),
+  },
+  (t) => [
+    primaryKey({ columns: [t.objectiveRevisionId, t.dimensionCode, t.contextValueId] }),
+    foreignKey({
+      name: "fk_objective_context_allowed_policy",
+      columns: [t.objectiveRevisionId, t.dimensionCode],
+      foreignColumns: [
+        objectiveContextPolicy.objectiveRevisionId,
+        objectiveContextPolicy.dimensionCode,
+      ],
+    }),
+  ],
+);
+
+// ---------------------------------------------------------------------------
+// Objective criteria — the missing middle layer between a capability claim and
+// the assessments that observe it.
+//
+// `code` is intended to stay stable within the objective's LINEAGE, not
+// merely within the revision — that convention is what would let
+// objective_revision_transition say "criteria unchanged -> evidence_carries_forward".
+// `uq_objective_criterion_code` only enforces uniqueness within a single
+// revision (objective_revision_id, code); lineage stability is an authoring
+// convention this constraint does not enforce.
+//
+// A `critical_error` criterion is blocking by definition; there is no severity
+// column, because a value the evaluator ignores is worse than no value at all.
+// ---------------------------------------------------------------------------
+
+export const objectiveCriterion = catalogSchema.table(
+  "objective_criterion",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    objectiveRevisionId: uuid("objective_revision_id")
+      .notNull()
+      .references(() => learningObjectiveRevision.id),
+    code: text("code").notNull(),
+    statement: text("statement").notNull(),
+    kind: criterionKindEnum("kind").notNull(),
+    sortOrder: integer("sort_order"),
+  },
+  (t) => [unique("uq_objective_criterion_code").on(t.objectiveRevisionId, t.code)],
+);
+
+// Typed, not jsonb: these drive publication validation, which makes them core
+// governing semantics rather than flexible metadata. They follow from the
+// CLAIM — an `implement` objective inherently requires practical performance
+// regardless of who is hiring.
+export const objectiveClaimEvidenceConstraint = catalogSchema.table(
+  "objective_claim_evidence_constraint",
+  {
+    objectiveRevisionId: uuid("objective_revision_id")
+      .primaryKey()
+      .references(() => learningObjectiveRevision.id),
+    practicalPerformanceRequired: boolean("practical_performance_required").notNull(),
+    constructedResponseSupported: boolean("constructed_response_supported").notNull(),
+    multipleChoiceAloneSufficient: boolean("multiple_choice_alone_sufficient").notNull(),
+    directObservationPossible: boolean("direct_observation_possible").notNull(),
+  },
+  () => [
+    check(
+      "ck_claim_constraint_coherent",
+      sql`NOT (practical_performance_required AND multiple_choice_alone_sufficient)`,
+    ),
+  ],
 );
 
 export const competencyObjectiveMembership = catalogSchema.table(
@@ -422,12 +518,7 @@ export const objectiveEvidenceImplication = catalogSchema.table(
     implicationType: evidenceImplicationTypeEnum("implication_type").notNull(),
     derivedEvidenceStrength: evidenceStrengthEnum("derived_evidence_strength").notNull(),
     maximumTargetState: assertionStateEnum("maximum_target_state").notNull(),
-    requiredObservableCodes: text("required_observable_codes")
-      .array()
-      .notNull()
-      .default(sql`ARRAY[]::text[]`),
     automatic: boolean("automatic").notNull().default(false),
-    transitive: boolean("transitive").notNull().default(false),
     rationale: text("rationale").notNull(),
     validationStatus: validationStatusEnum("validation_status").notNull().default("pending"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -447,6 +538,33 @@ export const objectiveEvidenceImplication = catalogSchema.table(
       "ck_evidence_implication_max_state",
       sql`maximum_target_state IN ('developing', 'demonstrated')`,
     ),
+  ],
+);
+
+// Explicit, shortened constraint names below: the auto-generated names for
+// this table's PK and FKs share a long common prefix that Postgres truncates
+// to 63 bytes, which collided ("... already exists") under the default names.
+export const objectiveEvidenceImplicationCriterion = catalogSchema.table(
+  "objective_evidence_implication_criterion",
+  {
+    implicationId: uuid("implication_id").notNull(),
+    objectiveCriterionId: uuid("objective_criterion_id").notNull(),
+  },
+  (t) => [
+    primaryKey({
+      name: "pk_evidence_implication_criterion",
+      columns: [t.implicationId, t.objectiveCriterionId],
+    }),
+    foreignKey({
+      name: "fk_evidence_implication_criterion_implication",
+      columns: [t.implicationId],
+      foreignColumns: [objectiveEvidenceImplication.id],
+    }),
+    foreignKey({
+      name: "fk_evidence_implication_criterion_criterion",
+      columns: [t.objectiveCriterionId],
+      foreignColumns: [objectiveCriterion.id],
+    }),
   ],
 );
 

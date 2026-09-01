@@ -22,6 +22,90 @@
       "when": 1787933364755,
       "tag": "0002_role_level_revision_metadata",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1787950266055,
+      "tag": "0003_evidence_semantics",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788000000000,
+      "tag": "0004_evidence_semantics_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787951671819,
+      "tag": "0005_objective_criteria",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787955658020,
+      "tag": "0006_evidence_semantics_contract",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1787956231867,
+      "tag": "0007_transfer_distance_performance_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1787957158014,
+      "tag": "0008_administration_evidence_ceiling",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1787957158999,
+      "tag": "0009_administration_ceiling_trigger",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787958203243,
+      "tag": "0010_assurance_split",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1787958882031,
+      "tag": "0011_mushy_karnak",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788010000000,
+      "tag": "0012_evidence_semantics_immutability",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788020000000,
+      "tag": "0013_context_value_ancestor_freeze",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1787967139779,
+      "tag": "0014_drop_evidence_spec_gate_defaults",
+      "breakpoints": true
     }
   ]
 }

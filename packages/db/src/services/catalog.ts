@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import type { Database } from "../client";
 import * as s from "../schema/index";
 
@@ -29,21 +29,38 @@ export interface CompetencyInput {
   sortOrder?: number;
 }
 
+export interface CriterionInput {
+  code: string;
+  statement: string;
+  kind: "success" | "quality" | "verification" | "process" | "critical_error";
+}
+
 export interface ObjectiveInput {
   code: string;
   title: string;
   statement: string;
   masteryLevel: 1 | 2 | 3 | 4 | 5;
   verbCode: string;
-  assuranceClass: "A" | "B" | "C";
+  defaultAssuranceClass: "A" | "B" | "C";
   performanceObject?: string;
   conditions?: Record<string, unknown>;
-  successCriteria: string[];
-  criticalErrors?: string[];
   tags?: string[];
   /** Canonical code of the primary competency. */
   primaryCompetencyCode: string;
   sortOrder?: number;
+  criteria: CriterionInput[];
+  claimEvidenceConstraints: {
+    practicalPerformanceRequired: boolean;
+    constructedResponseSupported: boolean;
+    multipleChoiceAloneSufficient: boolean;
+    directObservationPossible: boolean;
+  };
+  contextPolicies?: Array<{
+    dimensionCode: string;
+    policy: "required" | "optional" | "not_applicable";
+    /** Whitelist. Allowed values inherit downward: permitting aws permits aws_govcloud. */
+    allowedValueCodes?: string[];
+  }>;
 }
 
 export interface ObjectiveRelationshipInput {
@@ -71,9 +88,8 @@ export interface EvidenceImplicationInput {
   implicationType: (typeof s.evidenceImplicationTypeEnum.enumValues)[number];
   derivedEvidenceStrength: (typeof s.evidenceStrengthEnum.enumValues)[number];
   maximumTargetState: "developing" | "demonstrated";
-  requiredObservableCodes?: string[];
+  requiredCriterionCodes?: string[];
   automatic?: boolean;
-  transitive?: boolean;
   rationale: string;
   validationStatus?: (typeof s.validationStatusEnum.enumValues)[number];
 }
@@ -86,6 +102,8 @@ export class CatalogSession {
   readonly domainRevisionByCode = new Map<string, string>();
   readonly competencyRevisionByCode = new Map<string, string>();
   readonly objectiveRevisionByCode = new Map<string, string>();
+  /** "<objectiveCode>:<criterionCode>" -> objective_criterion.id */
+  readonly criterionIdByCode = new Map<string, string>();
 
   constructor(
     private readonly db: Database,
@@ -168,6 +186,7 @@ export class CatalogSession {
 
   async createObjective(input: ObjectiveInput): Promise<string> {
     const competencyRevisionId = this.requireCompetency(input.primaryCompetencyCode);
+    const criterionIds: Array<[string, string]> = [];
 
     const revisionId = await this.db.transaction(async (tx) => {
       const [identity] = await tx
@@ -185,11 +204,9 @@ export class CatalogSession {
           statement: input.statement,
           masteryLevel: input.masteryLevel,
           verbCode: input.verbCode,
-          assuranceClass: input.assuranceClass,
+          defaultAssuranceClass: input.defaultAssuranceClass,
           performanceObject: input.performanceObject ?? "",
           conditions: input.conditions ?? {},
-          successCriteria: input.successCriteria,
-          criticalErrors: input.criticalErrors ?? [],
           tags: input.tags ?? [],
         })
         .returning({ id: s.learningObjectiveRevision.id });
@@ -208,10 +225,56 @@ export class CatalogSession {
         sortOrder: input.sortOrder,
       });
 
+      for (const [index, criterion] of (input.criteria ?? []).entries()) {
+        const [created] = await tx
+          .insert(s.objectiveCriterion)
+          .values({
+            objectiveRevisionId: revision.id,
+            code: criterion.code,
+            statement: criterion.statement,
+            kind: criterion.kind,
+            sortOrder: index,
+          })
+          .returning({ id: s.objectiveCriterion.id });
+        if (!created) throw new Error(`failed to insert criterion ${criterion.code}`);
+        criterionIds.push([`${input.code}:${criterion.code}`, created.id]);
+      }
+
+      await tx.insert(s.objectiveClaimEvidenceConstraint).values({
+        objectiveRevisionId: revision.id,
+        ...input.claimEvidenceConstraints,
+      });
+
+      for (const contextPolicy of input.contextPolicies ?? []) {
+        await tx.insert(s.objectiveContextPolicy).values({
+          objectiveRevisionId: revision.id,
+          dimensionCode: contextPolicy.dimensionCode,
+          policy: contextPolicy.policy,
+        });
+        for (const valueCode of contextPolicy.allowedValueCodes ?? []) {
+          const inserted = await tx.execute(sql`
+            INSERT INTO catalog.objective_context_allowed_value
+              (objective_revision_id, dimension_code, context_value_id)
+            SELECT ${revision.id}, ${contextPolicy.dimensionCode}, id
+            FROM catalog.context_value
+            WHERE dimension_code = ${contextPolicy.dimensionCode} AND code = ${valueCode}
+          `);
+          // An unresolved code must fail loudly: silently inserting zero rows
+          // here would leave the whitelist smaller than authored, and the
+          // role compiler's whitelist check treats an empty whitelist as
+          // "unrestricted" — so a typo would silently widen the whitelist
+          // from restricted to unrestricted instead of erroring.
+          if (inserted.rowCount !== 1) {
+            throw new Error(`unknown context value ${contextPolicy.dimensionCode}:${valueCode}`);
+          }
+        }
+      }
+
       return revision.id;
     });
 
     this.objectiveRevisionByCode.set(input.code, revisionId);
+    for (const [key, id] of criterionIds) this.criterionIdByCode.set(key, id);
     return revisionId;
   }
 
@@ -241,19 +304,36 @@ export class CatalogSession {
   }
 
   async createEvidenceImplication(input: EvidenceImplicationInput): Promise<void> {
-    await this.db.insert(s.objectiveEvidenceImplication).values({
-      frameworkReleaseId: this.frameworkReleaseId,
-      sourceObjectiveRevisionId: this.requireObjective(input.sourceCode),
-      targetObjectiveRevisionId: this.requireObjective(input.targetCode),
-      implicationType: input.implicationType,
-      derivedEvidenceStrength: input.derivedEvidenceStrength,
-      maximumTargetState: input.maximumTargetState,
-      requiredObservableCodes: input.requiredObservableCodes ?? [],
-      automatic: input.automatic ?? false,
-      transitive: input.transitive ?? false,
-      rationale: input.rationale,
-      validationStatus: input.validationStatus ?? "approved",
-    });
+    const [created] = await this.db
+      .insert(s.objectiveEvidenceImplication)
+      .values({
+        frameworkReleaseId: this.frameworkReleaseId,
+        sourceObjectiveRevisionId: this.requireObjective(input.sourceCode),
+        targetObjectiveRevisionId: this.requireObjective(input.targetCode),
+        implicationType: input.implicationType,
+        derivedEvidenceStrength: input.derivedEvidenceStrength,
+        maximumTargetState: input.maximumTargetState,
+        automatic: input.automatic ?? false,
+        rationale: input.rationale,
+        validationStatus: input.validationStatus ?? "approved",
+      })
+      .returning({ id: s.objectiveEvidenceImplication.id });
+    if (!created) throw new Error(`failed to insert implication ${input.sourceCode}`);
+
+    // Required criteria always belong to the SOURCE objective — they describe
+    // what the source assessment established, not what the target claims.
+    for (const criterionCode of input.requiredCriterionCodes ?? []) {
+      await this.db.insert(s.objectiveEvidenceImplicationCriterion).values({
+        implicationId: created.id,
+        objectiveCriterionId: this.requireCriterion(input.sourceCode, criterionCode),
+      });
+    }
+  }
+
+  requireCriterion(objectiveCode: string, criterionCode: string): string {
+    const id = this.criterionIdByCode.get(`${objectiveCode}:${criterionCode}`);
+    if (!id) throw new Error(`unknown criterion ${objectiveCode}:${criterionCode}`);
+    return id;
   }
 
   requireDomain(code: string): string {

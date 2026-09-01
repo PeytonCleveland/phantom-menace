@@ -2,24 +2,28 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   jsonb,
   numeric,
+  primaryKey,
   smallint,
   text,
   timestamp,
   unique,
   uuid,
 } from "drizzle-orm/pg-core";
-import { frameworkRelease, learningObjectiveRevision } from "./catalog";
+import { frameworkRelease, learningObjectiveRevision, objectiveCriterion } from "./catalog";
+import { contextDimension, contextValue } from "./context";
 import {
   administrationModeEnum,
   assessmentSchema,
   claimRoleEnum,
   evidenceStrengthEnum,
+  performanceScopeEnum,
   taskKindEnum,
-  transferLevelEnum,
+  transferDistanceEnum,
 } from "./enums";
 import { profile } from "./learner";
 
@@ -96,7 +100,7 @@ export const taskRevision = assessmentSchema.table(
     taskKind: taskKindEnum("task_kind").notNull(),
     scenario: text("scenario").notNull(),
     instructions: text("instructions").notNull().default(""),
-    evidenceCeiling: smallint("evidence_ceiling").notNull(),
+    designEvidenceCeiling: smallint("design_evidence_ceiling").notNull(),
     estimatedMinutes: integer("estimated_minutes"),
     environmentConfig: jsonb("environment_config").notNull().default(sql`'{}'::jsonb`),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
@@ -105,7 +109,7 @@ export const taskRevision = assessmentSchema.table(
   (t) => [
     unique("uq_task_revision_no").on(t.taskTemplateId, t.revisionNo),
     check("ck_task_revision_no_positive", sql`revision_no > 0`),
-    check("ck_task_evidence_ceiling", sql`evidence_ceiling BETWEEN 1 AND 5`),
+    check("ck_task_design_evidence_ceiling", sql`design_evidence_ceiling BETWEEN 1 AND 5`),
     check("ck_task_estimated_minutes", sql`estimated_minutes IS NULL OR estimated_minutes >= 0`),
   ],
 );
@@ -119,10 +123,39 @@ export const taskVariant = assessmentSchema.table(
       .references(() => taskRevision.id),
     code: text("code").notNull(),
     variantConfig: jsonb("variant_config").notNull().default(sql`'{}'::jsonb`),
-    noveltyDefault: transferLevelEnum("novelty_default").notNull().default("same"),
+    transferDistanceDefault: transferDistanceEnum("transfer_distance_default")
+      .notNull()
+      .default("same"),
+    performanceScopeDefault: performanceScopeEnum("performance_scope_default")
+      .notNull()
+      .default("focused"),
     active: boolean("active").notNull().default(true),
   },
   (t) => [unique("uq_task_variant_code").on(t.taskRevisionId, t.code)],
+);
+
+export const taskVariantContext = assessmentSchema.table(
+  "task_variant_context",
+  {
+    taskVariantId: uuid("task_variant_id")
+      .notNull()
+      .references(() => taskVariant.id),
+    dimensionCode: text("dimension_code")
+      .notNull()
+      .references(() => contextDimension.code),
+    // Composite FK below (not a plain reference to contextValue.id) so a row
+    // cannot claim dimension `cloud_provider` while pointing at a value that
+    // actually belongs to `azure_region`.
+    contextValueId: uuid("context_value_id").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.taskVariantId, t.dimensionCode] }),
+    foreignKey({
+      name: "fk_task_variant_context_value_dimension",
+      columns: [t.contextValueId, t.dimensionCode],
+      foreignColumns: [contextValue.id, contextValue.dimensionCode],
+    }),
+  ],
 );
 
 export const taskObjectiveEvidenceSpec = assessmentSchema.table(
@@ -138,9 +171,9 @@ export const taskObjectiveEvidenceSpec = assessmentSchema.table(
     claimRole: claimRoleEnum("claim_role").notNull(),
     evidenceStrength: evidenceStrengthEnum("evidence_strength").notNull(),
     minimumIndependence: smallint("minimum_independence").notNull(),
-    minimumTransfer: transferLevelEnum("minimum_transfer").notNull(),
+    minimumTransferDistance: transferDistanceEnum("minimum_transfer_distance").notNull(),
+    minimumPerformanceScope: performanceScopeEnum("minimum_performance_scope").notNull(),
     rubricRevisionId: uuid("rubric_revision_id").references(() => rubricRevision.id),
-    directEvidenceRequired: boolean("direct_evidence_required").notNull().default(false),
     proxyPropagationAllowed: boolean("proxy_propagation_allowed").notNull().default(true),
     metadata: jsonb("metadata").notNull().default(sql`'{}'::jsonb`),
   },
@@ -161,7 +194,6 @@ export const evidenceSpecObservable = assessmentSchema.table(
     code: text("code").notNull(),
     statement: text("statement").notNull(),
     observableType: text("observable_type").notNull(),
-    critical: boolean("critical").notNull().default(false),
     sortOrder: integer("sort_order"),
   },
   (t) => [
@@ -171,6 +203,22 @@ export const evidenceSpecObservable = assessmentSchema.table(
       sql`observable_type IN ('behavior', 'product', 'outcome', 'process', 'explanation', 'judgment')`,
     ),
   ],
+);
+
+// Many-to-many on purpose. One hidden executable test can establish several
+// criteria at once, and one criterion can be established by several
+// independent observables — an automated check plus a human rubric item.
+export const observableCriterionMapping = assessmentSchema.table(
+  "observable_criterion_mapping",
+  {
+    evidenceSpecObservableId: uuid("evidence_spec_observable_id")
+      .notNull()
+      .references(() => evidenceSpecObservable.id),
+    objectiveCriterionId: uuid("objective_criterion_id")
+      .notNull()
+      .references(() => objectiveCriterion.id),
+  },
+  (t) => [primaryKey({ columns: [t.evidenceSpecObservableId, t.objectiveCriterionId] })],
 );
 
 // ---------------------------------------------------------------------------
@@ -188,6 +236,10 @@ export const taskAdministration = assessmentSchema.table(
     assistancePolicy: jsonb("assistance_policy").notNull().default(sql`'{}'::jsonb`),
     timeLimitMinutes: integer("time_limit_minutes"),
     processCaptureEnabled: boolean("process_capture_enabled").notNull().default(false),
+    // The ceiling given the assistance PERMITTED by this administration, not
+    // the assistance actually consumed. A practice run with hints available
+    // carries the reduced ceiling even if the learner never opens a hint.
+    effectiveEvidenceCeiling: smallint("effective_evidence_ceiling").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   () => [
@@ -195,6 +247,7 @@ export const taskAdministration = assessmentSchema.table(
       "ck_administration_time_limit",
       sql`time_limit_minutes IS NULL OR time_limit_minutes > 0`,
     ),
+    check("ck_administration_effective_ceiling", sql`effective_evidence_ceiling BETWEEN 1 AND 5`),
   ],
 );
 

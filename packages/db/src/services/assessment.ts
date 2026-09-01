@@ -6,7 +6,8 @@ import type { TaskSeed } from "../seed/data/tasks";
 /**
  * Task creation (spec §12.15, §13.4).
  * Enforces: evidence ceiling must be at least the level of every directly
- * measured objective, and direct Class B/C mappings must declare observables.
+ * measured objective. (Observable/criterion-coverage validation for direct
+ * evidence mappings lives in publication.ts, not here — see Task 10.)
  */
 
 export interface CreatedTask {
@@ -21,6 +22,7 @@ export async function createTask(
   db: Database,
   frameworkReleaseId: string,
   seed: TaskSeed,
+  criterionIdByCode: ReadonlyMap<string, string>,
 ): Promise<CreatedTask> {
   return db.transaction(async (tx) => {
     const [template] = await tx
@@ -39,7 +41,7 @@ export async function createTask(
         taskKind: seed.taskKind,
         scenario: seed.scenario,
         instructions: seed.instructions,
-        evidenceCeiling: seed.evidenceCeiling,
+        designEvidenceCeiling: seed.designEvidenceCeiling,
         estimatedMinutes: seed.estimatedMinutes,
       })
       .returning({ id: s.taskRevision.id });
@@ -53,7 +55,8 @@ export async function createTask(
           taskRevisionId: revision.id,
           code: variant.code,
           variantConfig: variant.variantConfig,
-          noveltyDefault: variant.noveltyDefault,
+          transferDistanceDefault: variant.transferDistanceDefault,
+          performanceScopeDefault: variant.performanceScopeDefault,
         })
         .returning({ id: s.taskVariant.id });
       if (!created) throw new Error(`failed to insert variant ${variant.code}`);
@@ -63,7 +66,7 @@ export async function createTask(
     const evidenceSpecIdByObjectiveCode = new Map<string, string>();
     for (const spec of seed.evidenceSpecs) {
       const objectiveResult = await tx.execute(sql`
-        SELECT lor.id, lor.mastery_level, lor.assurance_class
+        SELECT lor.id, lor.mastery_level
         FROM catalog.learning_objective_revision lor
         JOIN catalog.learning_objective lo ON lo.id = lor.learning_objective_id
         JOIN catalog.framework_release_objective fro ON fro.objective_revision_id = lor.id
@@ -76,21 +79,10 @@ export async function createTask(
       // §13.4: ceiling must cover every directly measured objective.
       if (
         spec.evidenceStrength === "direct" &&
-        Number(objective.mastery_level) > seed.evidenceCeiling
+        Number(objective.mastery_level) > seed.designEvidenceCeiling
       ) {
         throw new Error(
-          `task ${seed.code} ceiling ${seed.evidenceCeiling} is below directly measured objective ${spec.objectiveCode} (L${objective.mastery_level})`,
-        );
-      }
-
-      // §13.4: Class B/C direct evidence mappings must have observables.
-      if (
-        spec.evidenceStrength === "direct" &&
-        ["B", "C"].includes(String(objective.assurance_class)) &&
-        (spec.observables ?? []).length === 0
-      ) {
-        throw new Error(
-          `direct evidence spec for Class ${objective.assurance_class} objective ${spec.objectiveCode} must declare observables`,
+          `task ${seed.code} design ceiling ${seed.designEvidenceCeiling} is below directly measured objective ${spec.objectiveCode} (L${objective.mastery_level})`,
         );
       }
 
@@ -102,8 +94,8 @@ export async function createTask(
           claimRole: spec.claimRole,
           evidenceStrength: spec.evidenceStrength,
           minimumIndependence: spec.minimumIndependence,
-          minimumTransfer: spec.minimumTransfer,
-          directEvidenceRequired: spec.directEvidenceRequired ?? false,
+          minimumTransferDistance: spec.minimumTransferDistance,
+          minimumPerformanceScope: spec.minimumPerformanceScope,
           proxyPropagationAllowed: spec.proxyPropagationAllowed ?? true,
         })
         .returning({ id: s.taskObjectiveEvidenceSpec.id });
@@ -111,14 +103,27 @@ export async function createTask(
       evidenceSpecIdByObjectiveCode.set(spec.objectiveCode, createdSpec.id);
 
       for (const [index, observable] of (spec.observables ?? []).entries()) {
-        await tx.insert(s.evidenceSpecObservable).values({
-          evidenceSpecId: createdSpec.id,
-          code: observable.code,
-          statement: observable.statement,
-          observableType: observable.observableType,
-          critical: observable.critical,
-          sortOrder: index,
-        });
+        const [createdObservable] = await tx
+          .insert(s.evidenceSpecObservable)
+          .values({
+            evidenceSpecId: createdSpec.id,
+            code: observable.code,
+            statement: observable.statement,
+            observableType: observable.observableType,
+            sortOrder: index,
+          })
+          .returning({ id: s.evidenceSpecObservable.id });
+        if (!createdObservable) throw new Error(`failed to insert observable ${observable.code}`);
+
+        for (const criterionCode of observable.criterionCodes ?? []) {
+          const key = `${spec.objectiveCode}:${criterionCode}`;
+          const criterionId = criterionIdByCode.get(key);
+          if (!criterionId) throw new Error(`unknown criterion ${key}`);
+          await tx.insert(s.observableCriterionMapping).values({
+            evidenceSpecObservableId: createdObservable.id,
+            objectiveCriterionId: criterionId,
+          });
+        }
       }
     }
 
@@ -133,6 +138,7 @@ export async function createTask(
           mode: administration.mode,
           assistancePolicy: administration.assistancePolicy,
           processCaptureEnabled: administration.processCaptureEnabled,
+          effectiveEvidenceCeiling: administration.effectiveEvidenceCeiling,
         })
         .returning({ id: s.taskAdministration.id });
       if (!created) throw new Error("failed to insert task administration");

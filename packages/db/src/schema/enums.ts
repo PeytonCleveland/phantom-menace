@@ -49,6 +49,20 @@ export const relationshipProvenanceEnum = catalogSchema.enum("relationship_prove
   "empirical",
 ]);
 
+export const contextPolicyEnum = catalogSchema.enum("context_policy", [
+  "required",
+  "optional",
+  "not_applicable",
+]);
+
+export const criterionKindEnum = catalogSchema.enum("criterion_kind", [
+  "success",
+  "quality",
+  "verification",
+  "process",
+  "critical_error",
+]);
+
 export const objectiveRelationshipTypeEnum = catalogSchema.enum("objective_relationship_type", [
   "performance_requires",
   "learning_precedes",
@@ -111,10 +125,23 @@ export const evidenceStrengthEnum = evidenceSchema.enum("evidence_strength", [
 
 export const evidenceOriginEnum = evidenceSchema.enum("evidence_origin", ["direct", "proxy"]);
 
-export const transferLevelEnum = evidenceSchema.enum("transfer_level", [
+// Transfer distance and performance scope are independent. Far transfer of one
+// focused capability into an unfamiliar runtime is not the same thing as an
+// integrated mission in a familiar environment, and neither dominates.
+//
+// `performance_scope`, not `integration_scope`, and deliberately not
+// `mission_integrated`: a mission is an assessment FORMAT, not a property of
+// evidence. Integrated evidence can come from something that is not a mission,
+// and a mission can contain a focused sub-assessment.
+export const transferDistanceEnum = evidenceSchema.enum("transfer_distance", [
   "same",
   "near",
   "far",
+]);
+
+export const performanceScopeEnum = evidenceSchema.enum("performance_scope", [
+  "focused",
+  "composite",
   "integrated",
 ]);
 

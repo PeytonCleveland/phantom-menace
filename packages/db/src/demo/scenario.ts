@@ -58,11 +58,19 @@ async function main(): Promise<void> {
       result: "successful",
       evidenceStrength: "direct",
       independenceLevel: 4,
-      transferLevel: "near",
+      transferDistance: "near",
+      performanceScope: "focused",
       machineVerified: true,
       details: { source: "adaptive knowledge check" },
     });
-    await recalculateForObservations(db, [knowledgeCheck]);
+    const knowledgeCheckRecalc = await recalculateForObservations(db, [knowledgeCheck]);
+    const knowledgeCheckSkipped = [...knowledgeCheckRecalc.values()].reduce(
+      (sum, r) => sum + r.diagnostics.skippedIncompleteContext,
+      0,
+    );
+    console.log(
+      `   observations skipped for incomplete required context: ${knowledgeCheckSkipped}`,
+    );
 
     const mid = await computeFrontier(db, learner.id, ctx.roleLevelRevisionId);
     const newlyUnlocked = mid.available.filter((e) => !beforeAvailable.has(e.canonicalCode));
@@ -105,7 +113,8 @@ async function main(): Promise<void> {
       result: "successful",
       evidenceStrength: "direct",
       independenceLevel: 3,
-      transferLevel: "near",
+      transferDistance: "near",
+      performanceScope: "composite",
       rubricScore: 0.92,
       machineVerified: true,
       details: { administration: "qualification", variant: "variant-split-header" },
@@ -125,7 +134,8 @@ async function main(): Promise<void> {
           result: "successful",
           evidenceStrength: "supporting",
           independenceLevel: 3,
-          transferLevel: "near",
+          transferDistance: "near",
+          performanceScope: "focused",
           machineVerified: true,
         }),
       );
@@ -140,7 +150,7 @@ async function main(): Promise<void> {
     }
 
     // Recalculate all affected assertions.
-    const outcomes = await recalculateForObservations(db, [
+    const recalculation = await recalculateForObservations(db, [
       directEvidence,
       ...supportingIds,
       ...propagation.createdProxyObservationIds,
@@ -153,11 +163,16 @@ async function main(): Promise<void> {
       "NET-TCP-L1-003",
       "NET-TCP-L1-004",
     ]) {
-      const outcome = outcomes.get(ctx.objective(code));
+      const outcome = recalculation.get(ctx.objective(code))?.outcomes[0];
       if (outcome) {
         console.log(`   ${code}: ${outcome.state} (confidence ${outcome.confidence.toFixed(2)})`);
       }
     }
+    const recalculationSkipped = [...recalculation.values()].reduce(
+      (sum, r) => sum + r.diagnostics.skippedIncompleteContext,
+      0,
+    );
+    console.log(`   observations skipped for incomplete required context: ${recalculationSkipped}`);
 
     // ── Step 10: evidence lineage (§15.7) ─────────────────────────────────
     console.log("\n── §25.10 Why is RUST-NET-L2-003 demonstrated? (§15.7 lineage)");
@@ -165,12 +180,11 @@ async function main(): Promise<void> {
       SELECT a.state, a.confidence,
              o.id AS observation_id, o.origin, o.evidence_strength,
              o.details->>'implicationType' AS rule_type,
-             o.details->'requiredObservableCodes' AS gated_observables,
+             o.details->'requiredCriterionCodes' AS gated_criteria,
              src.id AS source_observation_id,
              srclo.canonical_code AS source_objective
       FROM learner.objective_assertion a
-      JOIN learner.assertion_evidence ae
-        ON ae.learner_id = a.learner_id AND ae.objective_revision_id = a.objective_revision_id
+      JOIN learner.assertion_evidence ae ON ae.assertion_id = a.id
       JOIN evidence.observation o ON o.id = ae.evidence_observation_id
       LEFT JOIN evidence.observation src ON src.id = o.source_evidence_id
       LEFT JOIN catalog.learning_objective_revision srclor ON srclor.id = src.objective_revision_id
@@ -187,7 +201,7 @@ async function main(): Promise<void> {
         console.log(
           `   derived from: direct evidence on ${row.source_objective} via ${row.rule_type}`,
         );
-        console.log(`   gated by observables: ${JSON.stringify(row.gated_observables)}`);
+        console.log(`   gated by criteria: ${JSON.stringify(row.gated_criteria)}`);
       }
     }
 
@@ -210,8 +224,10 @@ async function main(): Promise<void> {
         directEvidenceRequired: false,
         proxyEvidenceAllowed: true,
         minimumIndependence: 3,
-        minimumTransfer: "near",
+        minimumTransferDistance: "near",
+        minimumPerformanceScope: "focused",
         maximumEvidenceAge: null,
+        contexts: [],
       },
     );
     console.log(
@@ -225,13 +241,65 @@ async function main(): Promise<void> {
         directEvidenceRequired: true,
         proxyEvidenceAllowed: false,
         minimumIndependence: 3,
-        minimumTransfer: "near",
+        minimumTransferDistance: "near",
+        minimumPerformanceScope: "focused",
         maximumEvidenceAge: null,
+        contexts: [],
       },
     );
     console.log(
       `   RUST-NET-L2-003 with direct required: satisfied=${directRequired.satisfied} (${directRequired.reason})`,
     );
+
+    // ── Context: does the same evidence satisfy different-provider claims? ─
+    console.log("\n── §1 Context: where was this capability demonstrated?");
+    const cloudObjective = ctx.objective("CLOUD-DEPLOY-L3-001");
+    for (const [evidenceValue, expectations] of [
+      ["aws", ["aws", "azure", "aws_govcloud"]],
+      ["aws_govcloud", ["aws"]],
+    ] as const) {
+      const [contextLearner] = await db
+        .insert(s.profile)
+        .values({
+          displayName: `Context Demo (${evidenceValue})`,
+          externalSubjectId: `context-demo-${evidenceValue}-${Date.now()}`,
+        })
+        .returning({ id: s.profile.id });
+      if (!contextLearner) throw new Error("failed to create context learner");
+
+      const observationId = await recordObservation(db, {
+        learnerId: contextLearner.id,
+        objectiveRevisionId: cloudObjective,
+        result: "successful",
+        evidenceStrength: "direct",
+        independenceLevel: 4,
+        transferDistance: "near",
+        performanceScope: "composite",
+        contexts: { cloud_provider: evidenceValue },
+      });
+      await recalculateForObservations(db, [observationId]);
+
+      for (const requirementValue of expectations) {
+        const outcome = await checkObjectiveSatisfaction(db, contextLearner.id, cloudObjective, {
+          directEvidenceRequired: false,
+          proxyEvidenceAllowed: true,
+          minimumIndependence: null,
+          minimumTransferDistance: null,
+          minimumPerformanceScope: null,
+          maximumEvidenceAge: null,
+          contexts: [
+            {
+              dimensionCode: "cloud_provider",
+              valueCode: requirementValue,
+              minimumDistinctValues: 1,
+            },
+          ],
+        });
+        console.log(
+          `   evidence ${evidenceValue} vs requirement ${requirementValue}: ${outcome.satisfied ? "PASS" : "FAIL"}`,
+        );
+      }
+    }
 
     // ── Step 13 recap: frontier after the mission ──────────────────────────
     console.log("\n── Frontier after the mission (top 5)");

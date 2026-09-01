@@ -77,10 +77,20 @@ export async function computeFrontier(
       JOIN qualification.requirement_group g ON g.id = oreq.requirement_group_id
       WHERE g.role_level_revision_id = ${roleLevelRevisionId}
     ),
+    -- An objective may carry several context-scoped assertions (§4.10). The
+    -- frontier answers "what should I learn next", not "what am I qualified
+    -- for", so an objective counts as reached if ANY context is
+    -- demonstrated: collapse to one row per objective by state precedence
+    -- rather than joining every context-scoped row through.
     states AS (
-      SELECT objective_revision_id, state
+      SELECT DISTINCT ON (objective_revision_id) objective_revision_id, state
       FROM learner.objective_assertion
       WHERE learner_id = ${learnerId}
+      ORDER BY objective_revision_id,
+        CASE state
+          WHEN 'demonstrated' THEN 0 WHEN 'developing' THEN 1 WHEN 'stale' THEN 2
+          WHEN 'contradicted' THEN 3 ELSE 4
+        END
     )
     SELECT ro.objective_revision_id,
            lo.canonical_code,
@@ -95,9 +105,9 @@ export async function computeFrontier(
              FROM catalog.objective_relationship r
              JOIN catalog.learning_objective_revision plor ON plor.id = r.source_objective_revision_id
              JOIN catalog.learning_objective plo ON plo.id = plor.learning_objective_id
-             LEFT JOIN learner.objective_assertion ps
-               ON ps.learner_id = ${learnerId}
-              AND ps.objective_revision_id = r.source_objective_revision_id
+             -- Reuse states, not a second per-context join: the same
+             -- "any context reached" collapse applies to prerequisites.
+             LEFT JOIN states ps ON ps.objective_revision_id = r.source_objective_revision_id
              WHERE r.target_objective_revision_id = ro.objective_revision_id
                AND r.relationship_type = 'performance_requires'
                AND r.strength = 'hard'
